@@ -1,0 +1,39 @@
+\documentclass[japanese]{jssst_ppl} %% 日本語 (default)
+% \documentclass[english]{jssst_ppl} %% English
+% \documentclass[japanese,draft]{jssst_ppl} %% You can use the draft option
+\pagestyle{plain}
+\usepackage{latexsym}
+\usepackage{alltt}
+\usepackage{color}
+\usepackage[dvipdfmx]{graphicx}
+
+\definecolor{lightgray}{rgb}{0.83, 0.83, 0.83}
+\definecolor{green}{rgb}{0.80, 0.93, 0.80}
+\definecolor{purple}{rgb}{0.80, 0.60, 1.00}
+
+\title{Incremental な OCaml ステッパの開発}
+\author{古川 つきの, 浅井 健一}
+\inst{
+  お茶の水女子大学\\
+\texttt{furukawa.tsukino@is.ocha.ac.jp, asai@is.ocha.ac.jp}
+}
+\begin{document}
+\maketitle
+\begin{abstract}
+ステッパはプログラムの実行過程を見せるツールである。ステッパはデバッグに利用できるほか、複雑なコマンド操作などを必要としないので、プログラミング初学者がプログラムの動作を理解する助けになりうる。しかし先行研究のステッパでは、実行時間が大きいプログラムを入力すると長い間処理が終わらず表示や操作ができないという問題があった。本研究では１度のステップ実行で１つの簡約の内容を出力する incremental なステッパを開発し、それに伴って「簡約されたプログラム」から元のプログラムを復元するための仕組みを提案し実装することによって、実行に時間がかかるプログラムのデバッグや動作の確認を可能にする。
+\end{abstract}
+
+\input{intro}
+
+\input{syntax}
+
+\input{definition}
+
+\input{transform}
+
+
+
+\bibliographystyle{jplain}
+\bibliography{stepper}
+\end{document}
+

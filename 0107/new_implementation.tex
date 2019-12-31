@@ -1,0 +1,160 @@
+\subsection{incremental なステッパ}
+
+\begin{figure}[t]
+\begin{verbatim}
+(* 実行の種類 *)
+type mode = All | Next | Prev
+let mode: mode =
+  try begin match Sys.getenv "STEPPER_MODE" with
+    | "next" -> Next | "prev" -> Prev | _ -> All
+  end with Not_found -> All
+
+(* ステップ番号を格納する変数 *)
+let counter: int ref =
+  try int_of_string (Sys.getenv "STEPPER_COUNT")
+  with Not_found -> match mode with All -> ref 0
+                    | _ -> failwith "no step number"
+\end{verbatim}
+\caption{実行の種類とステップ番号の定義}
+\label{figure:mode}
+\end{figure}
+
+本稿の incremental なステッパでは、たとえば入力 \texttt{2 * 3 + 35[@stepper.reduct (1, 5 * 7) ]} に対して、以下の3種類の処理を実装する。
+
+\begin{itemize}
+\item 全ステップ出力 \texttt{\colorbox{green}{2 * 3} + 35 $\leadsto$ \colorbox{purple}{6} + 35, \colorbox{green}{6 + 35} $\leadsto$ \colorbox{purple}{41}}
+\item 次ステップ出力 \texttt{\colorbox{green}{2 * 3} + 35 $\leadsto$ \colorbox{purple}{6} + 35}
+\item 前ステップ出力 \texttt{2 * 3 + \colorbox{green}{5 * 7} $\leadsto$ 2 * 3 + \colorbox{purple}{35}}
+\end{itemize}
+
+このうちどの処理を行うかは、図\ref{figure:mode}のように、ステッパの実行ごとに環境変数で定めて、\texttt{mode} というグローバル変数に格納する。
+
+次ステップ出力の内容は全ステップ出力の冒頭の1ステップであるので、もし全ステップ出力と次ステップ出力をするだけならば、例えば関数 \texttt{memo}（図\ref{figure:memo}）の最後に
+\begin{verbatim}
+;if mode <> All then exit 0
+\end{verbatim}
+と書くことで、mode が Next のときは最初のステップしか出力されず実行が終了し、求める次ステップ出力を得ることができる。
+
+しかし、\ref{生じる問題と解決方法}節で述べたように、「前ステップ出力」処理のためには出力内容を増やしたり、その新しい出力を処理できるようにしなければならない。それぞれの処理において以下のような実装をする必要がある。
+\begin{itemize}
+\item 全ステップ出力：それを新しい入力として前ステップ出力は行わないので変更無し
+\item 次ステップ出力：そのステップの簡約によって失われる情報を前ステップ出力で復元できるように attribute を付ける
+\item 前ステップ出力：次ステップ出力時に attribute に書かれた情報から前ステップを導いて出力する
+\end{itemize}
+
+本研究では、incremental でないステッパにこれらの作用を更に付け足すことで、incremental なステッパを実装する。
+
+\subsubsection{情報の付加}
+
+\begin{figure}[t]
+  \begin{alltt}
+(* 簡約前後の式とコンテキストを受け取って、そのステップを出力する *)
+let memo (redex : expression) (reduct : expression)
+    (context : frame list) : unit =
+  let marked\_redex =                             (* 簡約前の式に attribute 付加 *)
+    \{redex with attr = ("stepper.redex", None) :: redex.attr\} in
+  let marked\_reduct =
+    \{reduct with
+     attr = ("stepper.reduct",
+             Some (!counter + 1,                  (* 簡約後の式にステップ番号と、 *)
+                   redex))                            (* 簡約前の式の情報を追加 *)
+            :: reduct.attr\} in
+  if mode = Prev                                       (* 前ステップ出力のとき、 *)
+  then counter := !counter - 1;                          (* ステップ番号を１戻す *)
+  print\_counter ();                                  (* 簡約前のステップ番号出力 *)
+  print\_as\_attribute (plug redex context);          (* 処理用の簡約前のプログラム *)
+  print (redex\_mapper
+           (plug marked\_redex context));           (* 表示用の簡約前のプログラム *)
+  counter := !counter + 1;                             (* ステップ番号を１進める *)
+  print\_counter ();                                  (* 簡約後のステップ番号出力 *)
+  let latter\_program = plug marked\_reduct context in
+  print\_as\_attribute (latter\_program);              (* 処理用の簡約後のプログラム *)
+  print (reduct\_mapper latter\_program);            (* 表示用の簡約後のプログラム *)
+  if mode <> All then exit 0               (* 全ステップ実行でなければプロセス終了 *)
+  \end{alltt}
+  \caption{incremental なステッパのための出力関数}
+  \label{figure:new-memo}
+\end{figure}
+
+incremental でないステッパでは、例えば \texttt{(2 * 3) + (5 * 7)} に対して、2 ステップ目を
+\begin{verbatim}
+  (* Step 1 *)
+  (2 * 3)[@stepper.redex ] + 35
+
+  (* Step 2 *)
+  6[@stepper.reduct ] + 35
+\end{verbatim}
+と出力するが、incremental なステッパでは \ref{生じる問題と解決方法}節で述べたように
+\begin{verbatim}
+  (* Step 1 *)
+  [@@@stepper.process (2 * 3) + 35[@stepper.reduct (1, 5 * 7) ] ]
+  (2 * 3)[@x ] + 35
+
+  (* Step 2 *)
+  [@@@stepper.process 6[@stepper.reduct (2, 2 * 3) ]
+    + 35[@stepper.reduct (1, 5 * 7) ] ]
+  6[@t ] + 35
+\end{verbatim}
+を出力したいので、出力をする関数 \texttt{memo} を書き換える必要がある。
+
+図\ref{figure:memo} にある関数 \texttt{memo} の引数は簡約基、それが簡約されたもの、その簡約時のコンテキストの 3 つであったが、新しい出力の内容もこれらの情報から構成することができる。その実装を図\ref{figure:new-memo}に示す。関数 \texttt{print\_as\_attribute : expression -> unit} は、\texttt{[@@@stepper.process ... ]} にプログラムを入れて出力する関数である。
+
+ここで、\ref{生じる問題と解決方法-表示の崩れ}節で述べたように、表示用のプログラムではハイライトに最低限必要な attribute だけを出力したい。しかし、今簡約している式の外、すなわちコンテキストに含まれる式の中には attribute \texttt{[@stepper.reduct ]} が含まれうる。上の出力例で処理用
+の \texttt{35} に付いている \texttt{[@stepper.reduct (1, 5 * 7) ]} がそれである。表示用のプログラムを出力するためには、今のステップで簡約される式以外の attribute を消したものを得る必要がある。
+
+そのために、本研究では OCaml のモジュール Ast\_mapper を利用した。Ast\_mapper は OCaml プログラムの構文木を簡単に部分的に変換するためのモジュールである。ここでは詳しい紹介は省くが、Ast\_mapper を利用して attribute のみを変換する関数 \texttt{redex\_mapper : expression -> expression} と関数 \texttt{reduct\_mapper : expression -> expression} を実装した。\texttt{redex\_mapper} は \texttt{[@x ]} 以外の attribute を無くす変換をする関数であり、\texttt{reduct\_mapper} は \texttt{[@stepper.reduct (今のステップ, 簡約前の式) ]} を \texttt{[@t ]} にし、それ以外の attribute を無くす変換をする関数である。
+
+以上によって、\ref{生じる問題と解決方法}節で定めたように、十分な情報を持つプログラムが出力できた。
+
+\subsubsection{情報の利用}
+簡約後の式に attribute が付加できたので、その情報を利用して「前ステップ出力」をする。前ステップ出力には、
+\begin{enumerate}
+\item 今のステップ番号を持つ attribute を探す
+\item その attribute が付いた式を attribute 内の式に置換したプログラムを出力する
+\end{enumerate}
+という操作が必要となる。「今のステップ番号を持つ \texttt{[@reduct ... ]}」は１つの式だけに付いており、これを探すには式を全て探索する必要がある。そのために、「前ステップ出力」時にだけ利用する新しいインタプリタ関数を作ってもよいが、検索の順序はステッパ関数、すなわち図\ref{figure:old-stepper}の \texttt{eval} と同じなので、本研究ではこの関数にさらに作用を足すことで前ステップ出力を行う。
+
+\begin{figure}
+\begin{alltt}
+\colorbox{lightgray}{ (* 今のステップ番号の [@stepper.reduct] を探してその中の式を返す *)}
+\colorbox{lightgray}{let rec find\_last\_reduct (attrs : attribute list) : expression =}
+\colorbox{lightgray}{  match attrs with}
+\colorbox{lightgray}{  | [] -> raise Not\_found      (* リストの最後まで見つからなければ例外 Not\_found *)}
+\colorbox{lightgray}{  | ("stepper.reduct", Some (n, redex)) :: \_        (* 簡約後のマークがあって、 *)}
+\colorbox{lightgray}{    when n = !counter -> redex (* その番号が今のステップ番号だったらその式を返す *)}
+\colorbox{lightgray}{  | \_ :: rest -> find\_last\_reduct rest}
+
+(* ステップ実行インタプリタ *)
+let rec eval (expr : expression) (context : frame list) : expression =
+\colorbox{lightgray}{  if mode = Prev}
+\colorbox{lightgray}{  then begin try}
+\colorbox{lightgray}{      let marked\_redex = find\_last\_reduct expr.attr in}
+\colorbox{lightgray}{      memo marked\_redex expr                     (* 出力して最後に exit 0 する *)}
+\colorbox{lightgray}{    with Not\_found -> ()             (* expr が探している式でなければ何もせず、 *)}
+\colorbox{lightgray}{  end;                                               (* 以下の match 文へ進む *)}
+  match expr.desc with
+  | Var (x) -> failwith "error: Unbound variable"
+  | Fun (x, f) -> expr
+  | App (e1, e2) ->
+    let arg\_value = eval e2 (AppR e1 :: context) in
+    let fun\_value = eval e1 (AppL arg\_value :: context) in
+    match fun\_value.desc with                          (* 以下、次ステップの簡約 *)
+    | Fun (x, f) ->
+      let redex = {expr with desc = App (fun\_value, arg\_value)} in
+      let reduct = {(subst f x arg\_value)
+                    with attr = expr.attr} in
+      memo redex reduct context;
+      eval reduct context
+    | \_ -> failwith "error: not a function"
+\end{alltt}
+\caption{incremental なステッパ}
+\label{figure:new-stepper}
+\end{figure}
+
+前ステップ出力の処理は、関数 \texttt{memo} を図\ref{figure:new-memo}のように定義した上で図\ref{figure:new-stepper}のように実装することができる。灰色の部分が incremental になったことで加わった部分である。灰色の部分は、\texttt{if mode = Prev then begin ... end;} であることから分かるように、前ステップ出力モードの時にしか実行されない。
+
+前ステップ出力モードの時の関数 \texttt{eval} の実行は、まず今評価している式に \texttt{[@stepper.reduct (今のステップ番号, 簡約前の式) ]} が付いているかを調べることから始まる。そこで見つかれば、その「\texttt{簡約前の式}」を利用して前ステップの出力ができプロセスを終了する。見つからなければ、\texttt{eval} の本体である \texttt{match} 文へ進む。今評価している式をパターンマッチして、関数だったらそれ以上の簡約はできず、そのままその関数を返す。関数適用だったら、引数部分の式の実行に移る。するとまたその引数部分の式に\texttt{[@stepper.reduct (今のステップ番号, 簡約前の式) ]} が付いているかを調べる。あれば出力して終了、無ければ同様に式を普通に評価する。
+
+このように実行を進めると、1 以上の正しいステップ番号を変数 \texttt{counter} に持っている限り、必ずどこかに \texttt{[@stepper.reduct (今のステップ番号, 簡約前の式) ]} が付いた式が見つかる。そして、今のステップに至るまで行ってきた「次ステップの出力」と同じ順序で式を探索してきたため、見つかるまでに評価した式は全て簡約済みであり、その式を見つけるまでに簡約処理、すなわち \texttt{match fun\_value.desc with ...} を行うことは無い。よって、灰色の部分を書き足すことで前ステップ出力が可能になる。
+
+以上のように、incremental でないステッパ（図\ref{figure:old-stepper}, \ref{figure:memo}）を図\ref{figure:mode}, \ref{figure:new-memo}, \ref{figure:new-stepper}のように書き換えることで、incremental なステッパを実装できる。

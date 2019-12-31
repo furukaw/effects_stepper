@@ -1,0 +1,41 @@
+\section{継続渡し形式のインタプリタ}
+\label{section:definition}
+
+この節では、ステッパの対象言語とそのインタプリタを定義する。
+
+\subsection{algebraic effects}
+\label{subsection:algebraic effects}
+
+
+
+\subsection{対象言語の構文}
+\label{subsection:syntax}
+
+対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。型 \texttt{v} に含まれる \texttt{Cont} は継続を表すコンストラクタであり、入力プログラムに含まれることはないが、ステップ実行の過程で現れる。\texttt{Cont} の第一引数の文字列は関数のように表示する際の仮引数名であり表示の為に用いる。
+
+\begin{figure}
+\begin{verbatim}
+(* 値 *)
+type v = Var of string              (* x *)
+       | Fun of string * e          (* fun x -> e *)
+       | Cont of string * (k -> k)  (* 継続 fun x => ... *)
+(* ハンドラ *)
+and h = {
+  return : string * e;                       (* handler {return x -> e,      *)
+  ops : (string * string * string * e) list  (*          op(x; k) -> e, ...} *)
+}
+(* 式 *)
+and e = Val of v          (* v *)
+      | App of e * e      (* e e *)
+      | Op of string * e  (* op e *)
+      | With of h * e     (* with h handle e *)
+(* 継続 *)
+and k = v -> a
+(* 実行結果 *)
+and a = Return of v
+      | OpCall of string * v * k
+
+\end{verbatim}
+\caption{対象言語の定義}
+\label{figure:syntax}
+\end{figure}

@@ -1,0 +1,55 @@
+\section{CPSインタプリタ}
+\label{section:definition}
+
+この節では、型無し $\lambda$ 計算と algebraic effects から成る言語について、インタプリタ関数の機械的なプログラム変換によってステッパ関数を導出する過程を説明する。図 \ref{figure:syntax} の言語に対する、call-by-value かつ right-to-left のインタプリタを図 \ref{figure:1cps} に定義する。ただし、関数 \texttt{subst : e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e} の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v} と値 \texttt{cont\_value} を代入した式を返す。関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数で、例えば \texttt{handler \{return x -> x, op1(y, k) -> k y\}} を表すデータを \texttt{h} とすると \texttt{search\_op "op2" h} は \texttt{None} を返し \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var "y"))} を返す。
+
+\begin{figure}
+\begin{verbatim}
+(* インタプリタ *)
+let rec eval (exp : e) (k : k) : a = match exp with
+  | Val (v) -> k v
+  | App (e1, e2) ->
+    eval e2 (fun v2 ->
+        eval e1 (fun v1 -> match v1 with
+            | Fun (x, e) ->
+              let reduct = subst e [(x, v2)] in
+              eval reduct k
+            | Cont (x, k') ->
+              (k' k) v2
+            | _ -> failwith "type error"))
+  | Op (name, e) ->
+    eval e (fun v -> OpCall (name, v, k))
+  | With (h, e) ->
+    let a = eval e (fun v -> Return v) in
+    apply_handler k h a
+
+(* ハンドラを処理する関数 *)
+and apply_handler (cont_last : k) (h : h) (a : a) : a =
+  match a with
+  | Return v ->
+    (match h with {return = (x, e)} ->
+        let reduct = subst e [(x, v)] in
+        eval reduct cont_last)
+  | OpCall (name, v, k') ->
+    (match search_op name h with
+      | None ->
+        OpCall (name, v, (fun v ->
+            let a' = k' v in
+            apply_handler cont_last h a'))
+      | Some (x, k, e) ->
+        let new_var = gen_var_name () in
+        let cont_value =
+          Cont (new_var,
+                fun cont_last -> fun v ->
+                  let a' = k' v in
+                  apply_handler cont_last h a') in
+        let reduct = subst e [(x, v); (k, cont_value)] in
+        eval reduct cont_last)
+
+(* 初期継続を渡して実行を始める *)
+let interpreter (e : e) : a = eval e (fun v -> Return v)
+\end{verbatim}
+\caption{継続渡し形式で書かれたインタプリタ}
+\label{figure:1cps}
+\end{figure}
+

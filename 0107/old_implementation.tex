@@ -1,0 +1,61 @@
+\subsection{incremental でないステッパ}
+
+\begin{figure}[t]
+  \begin{alltt}
+\colorbox{lightgray}{(* コンテキストのフレームの定義 *)}
+\colorbox{lightgray}{type frame = AppR of expr  (* e [.] *)}
+\colorbox{lightgray}{           | AppL of expr  (* [.] v *)}
+
+\colorbox{lightgray}{(* ステップ番号を格納する変数 *)}
+\colorbox{lightgray}{let counter : int ref = ref 0}
+
+(* 式\colorbox{lightgray}{とその周りのコンテキスト}を受け取って式を評価する *)
+let rec eval (expr : expression) \colorbox{lightgray}{(context : frame list)} : expression =
+  match expr.desc with
+  | Var (x) -> failwith "error: Unbound variable"
+  | Fun (x, f) -> expr
+  | App (e1, e2) ->
+    let arg\_value = eval e2 \colorbox{lightgray}{(AppR e1 :: context)} in          (* 引数部分を評価 *)
+    let fun\_value = eval e1 \colorbox{lightgray}{(AppL arg\_value :: context)} in   (* 関数部分を評価 *)
+    match fun\_value.desc with
+    | Fun (x, f) ->
+    let redex = \{desc = App (fun\_value, arg\_value);               (* 簡約前の式 *)
+                 attr = expr.attr\} in
+      let reduct = \{desc = (subst f x arg\_value).desc ;          (* 簡約後の式 *)
+                    attr = expr.attr\} in
+      \colorbox{lightgray}{memo redex reduct context;                              (* ステップ出力 *)}
+      eval reduct \colorbox{lightgray}{context}                                  (* 簡約後の式を評価 *)
+    | \_ -> failwith "error: not a function"
+
+(* \colorbox{lightgray}{空のコンテキストで}式の評価を始める *)
+let start (expr : expression) : expression =
+  eval expr \colorbox{lightgray}{[]}
+\end{alltt}
+\caption{既存のステッパの実装}
+\label{figure:old-stepper}
+\end{figure}
+
+著者らの incremental でないステッパ\cite{FSA18}は big-step インタプリタ関数にステップ出力のための作用を追加することで構築されている。その実装は図\ref{figure:old-stepper}のようになる。関数 \texttt{eval} は OCaml の call-by-value かつ right-to-left の評価戦略に従った代入ベースの $\lambda$ 計算のインタプリタにステップ実行のための作用を追加したステッパである。背景に灰色が付いた部分がステップ実行のための作用であり、白い部分のみを読むと単なるインタプリタとして見ることができる。ただし関数 \texttt{subst} は代入の関数であり、\texttt{subst f x arg\_value} は式 \texttt{f} の中の変数 \texttt{x} を式 \texttt{arg\_value} に置換した式を返す。このステッパの出力は、例えば入力プログラム \texttt{2 * 3 + 5 * 7} に対して図\ref{figure:highlight}の左側の文字列（にステップ番号の表示を足したもの）である。
+
+ステッパは実行可能なプログラムのみを受け付けるため、ステッパに渡される式の中に自由変数および型エラーは存在しない。さらにこのステッパの基となる代入ベースのインタプリタでは、関数の内部の式は必ず関数適用の簡約（すなわち実引数の代入）の後に実行するので、常に変数はその実行の前に束縛を解決されており、変数がインタプリタ関数の引数として実行されることはない。よって、関数 \texttt{eval} 中の \texttt{failwith} の呼び出しは起こり得ない。
+
+\begin{figure}[t]
+\begin{alltt}
+(* 簡約前後の式とコンテキストを受け取って、そのステップを出力する *)
+let memo (redex : expression) (reduct : expression) (context : frame list)
+  : unit =
+  let marked\_redex =                             (* 簡約前の式に attribute 追加 *)
+    \{redex with attr = Some ("stepper.redex", None)\} in
+  let marked\_reduct =                            (* 簡約後の式に attribute 追加 *)
+    \{reduct with attr = Some ("stepper.reduct", None)\} in
+  print\_counter ();                                  (* 簡約前ステップ番号を出力 *)
+  print (plug redex current\_context);                (* 簡約前のプログラムを出力 *)
+  counter := !counter + 1;                           (* ステップ番号を 1 増やす *)
+  print\_counter ();                                  (* 簡約後ステップ番号を出力 *)
+  print (plug reduct current\_context)                (* 簡約後のプログラムを出力 *)
+\end{alltt}
+\caption{ステップ出力関数}
+\label{figure:memo}
+\end{figure}
+
+関数 \texttt{eval} の下から３行目の関数 \texttt{memo} は、簡約前のプログラムを出力し、 \texttt{counter} の値を１増やし、簡約後のプログラムを出力する関数である。その実装は図\ref{figure:memo}に示す。ただし、関数 \texttt{print\_counter : unit -> unit} はコメントとしてステップ番号 \texttt{(* Step n *)} を標準出力する関数、関数 \texttt{print : expr -> unit} は式を標準出力する関数、関数 \texttt{plug : expression -> frame list -> expression} は計算している途中の部分式とコンテキストを受け取って式を再構成する関数であり、実装は省略する。変数 \texttt{counter} には、現在のステップ番号が格納されている。式の評価中に関数適用の簡約を行うたびに１ずつ増加させることで、式全体の通しステップ番号を出力できる。

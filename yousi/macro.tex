@@ -1,0 +1,18 @@
+% 型
+\newcommand\Int{\textsf{int}}
+\newcommand\Arrow[2]{{#1}\rightarrow{#2}}
+
+% ラムダ式
+\newcommand\Lam[2]{\lambda{#1}.\,{#2}}
+\newcommand\LamP[2]{(\Lam{#1}{#2})}
+\newcommand\App[2]{{#1}\,{#2}}
+\newcommand\AppP[2]{(\App{#1}{#2})}
+\newcommand\Shift[2]{{\cal S}{#1}.\,{#2}}
+\newcommand\ShiftP[2]{(\Shift{#1}{#2})}
+\newcommand\Reset[1]{\langle{#1}\rangle}
+
+% Judgement
+\newcommand\Judge[3]{{#1}\vdash{#2}:{#3}}
+
+% CPS 変換
+\newcommand\CPS[1]{[\![{#1]\!]}}

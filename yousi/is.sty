@@ -1,0 +1,86 @@
+%____________________________________________________________
+% A. Select NTT or ASCII.  ASCII jLaTeX is selected by default.
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%% (1) ASCII
+%% (1-a) Define \dg in ASCII LaTeX
+\newcommand{\dg}{\gt}
+% (1-b) US topmargin to A4 topmargin.
+%\voffset=-4true mm  % ASCII
+\voffset=-12true mm  % ASCII
+%------------------------------------------------------------
+%% (2) NTT
+%% (2-a) Define \gt for NTT jLaTeX
+%\newcommand{\gt}{\dg} 
+%% (2-b) US topmargin to A4 topmargin
+%\setlength{\topmargin}{-5mm} %
+
+%____________________________________________________________
+% B. Section and title style. 
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+\renewcommand{\section}{\@startsection{section}{1}{\z@}%
+   {.2\Cvs \@plus.5\Cdp \@minus.2\Cdp}%
+   {.2\Cvs \@plus.3\Cdp}%
+   {\reset@font\large\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{\z@}%
+   {.2\Cvs \@plus.5\Cdp \@minus.2\Cdp}%
+   {.2\Cvs \@plus.3\Cdp}%
+   {\reset@font\normalsize\bfseries}}
+\renewcommand{\subsubsection}{\@startsection{subsubsection}{3}{\z@}%
+   {.2\Cvs \@plus.5\Cdp \@minus.2\Cdp}%
+   {.2\Cvs \@plus.3\Cdp}%
+   {\reset@font\normalsize\bfseries}}
+
+\def\@maketitle{%
+  \newpage
+  \vspace*{-0mm}%
+  \begin{center}%
+    {\Large \@title \par}%
+    \vskip 0.5em%
+    {\large
+      \lineskip .5em%
+      \begin{tabular}[t]{c}%
+        \@author
+      \end{tabular}\par}%
+    %\vskip 0em%
+    %{\large \@date}%
+  \end{center}%
+  \par
+  \vskip 1.5em}
+%____________________________________________________________
+% C. Page style
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+\setlength{\oddsidemargin}{0mm}
+\setlength{\evensidemargin}{-10mm}
+\setlength{\textheight}{254mm}
+\setlength{\textwidth}{169mm}
+\setlength{\columnsep}{8mm}
+\setlength{\footskip}{10mm}
+\setlength{\headheight}{0mm}
+\setlength{\headsep}{0mm}
+
+%____________________________________________________________
+% D. Paragraph style.
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+\setlength{\parindent}{2ex}
+\setlength{\parskip}{-0mm}
+\setlength{\topsep}{-0mm}
+\setlength{\partopsep}{-0mm}
+
+%____________________________________________________________
+% F. Figure style
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+\setlength{\floatsep}{3mm}
+\setlength{\textfloatsep}{3mm}
+\setlength{\intextsep}{3mm}
+\setlength{\dblfloatsep}{3mm}
+\setlength{\dbltextfloatsep}{3mm}
+
+%____________________________________________________________
+% G. Title and footnote style
+%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%\renewcommand{\title}[1]{\bf\dg\vspace*{-2.8em}}
+%\renewcommand{\thefootnote}{}
+\newcommand{\Ref}[1]{\mbox{\footnotesize {#1}}}
+\date{} % Make the date field empty
+
+\endinput
