@@ -1,7 +1,45 @@
-\section{CPSインタプリタ}
+\section{継続渡し形式のインタプリタ}
 \label{section:definition}
 
-この節では、型無し $\lambda$ 計算と algebraic effects から成る言語について、インタプリタ関数の機械的なプログラム変換によってステッパ関数を導出する過程を説明する。図 \ref{figure:syntax} の言語に対する、call-by-value かつ right-to-left のインタプリタを図 \ref{figure:1cps} に定義する。ただし、関数 \texttt{subst : e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e} の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v} と値 \texttt{cont\_value} を代入した式を返す。関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数で、例えば \texttt{handler \{return x -> x, op1(y, k) -> k y\}} を表すデータを \texttt{h} とすると \texttt{search\_op "op2" h} は \texttt{None} を返し \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var "y"))} を返す。
+この節では、型無し$\lambda$計算と algebraic effects からなる言語とそのインタプリタを定義する。
+
+\subsection{対象言語の構文}
+\label{subsection:syntax}
+
+対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
+値のコンストラクタ \texttt{Cont} は継続を表すコンストラクタであり、入力プログラムに含まれることはないが、ステップ実行の過程で現れる。
+式の型 \texttt{e} で表されるものが対象言語のプログラムである。
+
+\begin{figure}
+\begin{verbatim}
+(* 値 *)
+type v = Var of string              (* x *)
+       | Fun of string * e          (* fun x -> e *)
+       | Cont of string * (k -> k)  (* 継続 fun x => ... *)
+(* ハンドラ *)
+and h = {
+  return : string * e;                       (* handler {return x -> e,      *)
+  ops : (string * string * string * e) list  (*          op(x; k) -> e, ...} *)
+}
+(* 式 *)
+and e = Val of v          (* v *)
+      | App of e * e      (* e e *)
+      | Op of string * e  (* op e *)
+      | With of h * e     (* with h handle e *)
+(* 継続 *)
+and k = v -> a
+(* 実行結果 *)
+and a = Return of v
+      | OpCall of string * v * k
+
+\end{verbatim}
+\caption{対象言語の定義}
+\label{figure:syntax}
+\end{figure}
+
+\subsection{CPS インタプリタ}
+
+図 \ref{figure:syntax} の言語に対する、call-by-value かつ right-to-left のインタプリタを図 \ref{figure:1cps} に定義する。ただし、関数 \texttt{subst : e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e} の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v} と値 \texttt{cont\_value} を代入した式を返す。関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数で、例えば \texttt{handler \{return x -> x, op1(y, k) -> k y\}} を表すデータを \texttt{h} とすると \texttt{search\_op "op2" h} は \texttt{None} を返し \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var "y"))} を返す。
 
 \begin{figure}
 \begin{verbatim}
@@ -53,3 +91,23 @@ let interpreter (e : e) : a = eval e (fun v -> Return v)
 \label{figure:1cps}
 \end{figure}
 
+図\ref{figure:1cps} のインタプリタによって、プログラムは以下の規則のように評価される。
+
+\[
+\begin{array}{c}
+  (\texttt{h} = \texttt{handler \{return x -> e0, op1(x; k) -> e1, ..., opn(x; k) -> en\}}) \\
+  \ \\
+  \infer[(\textsf{Fun})]
+        {\Eval{fun x -> e}{fun x -> e}}
+        {}
+        \qquad
+  \infer[(\textsf{App})]
+        {\Eval{fun x -> e}{e'[v2/x]}}
+        {\Eval{e1}{fun x -> e'}
+          &\Eval{e2}{v2}} \\
+        \ \\
+        \infer[(\textsf{Return})]
+              {\Eval{with h handle e}{e0[v/x]}}
+              {？} \\
+\end{array}
+\]

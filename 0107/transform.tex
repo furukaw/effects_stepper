@@ -46,10 +46,9 @@ and apply_in (k : k) (v : v) : a = match k with
      | Fun (x, e) ->
        let reduct = subst e [(x, v2)] in
        eval reduct k
-     | Cont (x, k') ->
+     | Cont (k') ->
        apply_in (k' k) v2
-     | _ -> failwith "type error"
-    )
+     | _ -> failwith "type error")
   | FOp (name, k) -> OpCall (name, v, k)
   | FCall (k_last, h, k') ->
     let a = apply_in k' v in
@@ -65,9 +64,8 @@ and apply_handler (k_last : k) (h : h) (a : a) : a = match a with
      | None ->
        OpCall (name, v, FCall (k_last, h, k'))
      | Some (x, k, e) ->
-       let new_var = gen_var_name () in
        let cont_value =
-         Cont (new_var, fun k_last -> FCall (k_last, h, k')) in
+         Cont (fun k_last -> FCall (k_last, h, k')) in
        let reduct = subst e [(x, v); (k, cont_value)] in
        eval reduct k_last)
 
@@ -103,7 +101,7 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
      | Fun (x, e) ->
        let reduct = subst e [(x, v2)] in
        eval reduct k k2
-     | Cont (x, k') ->
+     | Cont (k') ->
        apply_in (k' k) v2 k2
      | _ -> failwith "type error")
   | FOp (name, k) -> k2 (OpCall (name, v, k))
@@ -120,9 +118,8 @@ and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
      | None ->
        k2 (OpCall (name, v, FCall (k_last, h, k')))
      | Some (x, k, e) ->
-       let new_var = gen_var_name () in
-       let cont_value =
-         Cont (new_var, fun k_last -> FCall (k_last, h, k')) in
+      let cont_value =
+         Cont (fun k_last -> FCall (k_last, h, k')) in
        let reduct = subst e [(x, v); (k, cont_value)] in
        eval reduct k_last k2)
 
@@ -163,16 +160,16 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
      | Fun (x, e) ->
        let reduct = subst e [(x, v2)] in
        eval reduct k k2
-     | Cont (x, k') ->
+     | Cont (k') ->
        apply_in (k' k) v2 k2
      | _ -> failwith "type error")
   | FOp (name, k) -> apply_out k2 (OpCall (name, v, k))
-  | FCall (k_last, h, k') ->
-    apply_in k' v (GHandle (k_last, h, k2))
+  | FCall (k_last, h, k') -> apply_in k' v (GHandle (k_last, h, k2))
 
 and apply_out (k2 : k2) (a : a) : a = match k2 with
   | GId -> a
-  | GHandle (k, h, k2) -> apply_handler k h a k2
+  | GHandle (k, h, k2) ->
+    apply_handler k h a k2
 
 and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
@@ -184,9 +181,7 @@ and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
      | None ->
        apply_out k2 (OpCall (name, v, FCall (k_last, h, k')))
      | Some (x, k, e) ->
-       let new_var = gen_var_name () in
-       let cont_value =
-         Cont (new_var, fun k_last -> FCall (k_last, h, k')) in
+       let cont_value = Cont (fun k_last -> FCall (k_last, h, k')) in
        let reduct = subst e [(x, v); (k, cont_value)] in
        eval reduct k_last k2)
 
@@ -199,3 +194,55 @@ let stepper (e : e) : a = eval e FId GId
 この非関数化によって、引数 \texttt{k} と引数 \texttt{k2} からコンテキスト全体の情報が得られるようになった。
 \ref{subsection:2defun} 節で示した例について比較する。\texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を表す構文木を関数 \texttt{eval} に渡して実行を始める際の継続 \texttt{k} は \ref{subsection:2defun} 節と同様に \texttt{{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}} である。そして継続 \texttt{k2} は \texttt{GHandle ()}
 具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
+
+\subsection{出力}
+\label{subsection:memo}
+
+\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が足した後の関数 \texttt{apply^_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
+
+\begin{figure}
+\begin{verbatim}
+and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
+  | FId -> apply_out k2 (Return v)
+  | FApp2 (e1, k) -> let v2 = v in
+    eval e1 (FApp1 (v2, k)) k2
+  | FApp1 (v2, k) -> let v1 = v in
+    (match v1 with
+     | Fun (x, e) ->
+       let redex = App (Val v1, Val v2) in
+       let reduct = subst e [(x, v2)] in
+       memo redex reduct (k, k2);
+       eval reduct k k2
+     | Cont (x, k') ->
+       let redex = App (Val v1, Val v2) in
+       let reduct = plug_in_handle (Val v2) (k' FId) in
+       memo redex reduct (k, k2);
+       apply_in (k' k) v2 k2
+     | _ -> failwith "type error")
+  | FOp (name, k) -> apply_out k2 (OpCall (name, v, k))
+  | FCall (k_last, h, k') ->
+    apply_in k' v (GHandle (k_last, h, k2))
+
+and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
+  | Return v ->
+    (match h with {return = (x, e)} ->
+       let redex = With (h, Val v) in
+       let reduct = (subst e [(x, v)]) in
+       memo redex reduct (k_last, k2);
+       eval reduct k_last k2)
+  | OpCall (name, v, k') ->
+    (match search_op name h with
+     | None ->
+       apply_out k2 (OpCall (name, v, FCall (k_last, h, k')))
+     | Some (x, k, e) ->
+       let redex = With (h, plug_in_handle (Op (name, Val v)) k') in
+       let new_var = gen_var_name () in
+       let cont_value =
+         Cont (new_var, fun k_last -> FCall (k_last, h, k')) in
+       let reduct = subst e [(x, v); (k, cont_value)] in
+       memo redex reduct (k_last, k2);
+       eval reduct k_last k2)
+\end{verbatim}
+\caption{変換の後、出力関数を足して得られるステッパ}
+\label{figure:5memo}
+\end{figure}

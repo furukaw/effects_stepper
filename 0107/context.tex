@@ -1,0 +1,107 @@
+\section{ステッパの実装におけるコンテキスト}
+\label{section:context}
+
+ステッパは簡約のたびに簡約前後のプログラムを出力するインタプリタである。例えばプログラム \texttt{((fun a -> a) ((fun b -> b) (fun c -> c)))} を入力した場合、以下のように出力したい。
+
+\begin{quote}
+\begin{verbatim}
+((fun a -> a) ((fun b -> b) (fun c -> c)))
+((fun a -> a) (fun c -> c))
+
+((fun a -> a) (fun c -> c))
+(fun c -> c)
+\end{verbatim}
+\end{quote}
+
+ステッパはインタプリタにステップ出力機能が加わったものなので、通常のインタプリタ関数に書き足すことで実装できる。図 \ref{figure:lambda} に OCaml による型無し$\lambda$計算の定義とインタプリタの実装を示す。関数 \texttt{subst : e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v)]} は式 \texttt{e} の中の全ての変数 \texttt{x} を値 \texttt{v} に置換した式を返す。
+
+\begin{figure}
+\begin{verbatim}
+type v = Var of string
+       | Fun of string * e
+
+type e = Val of v
+       | App of e * e
+
+let rec eval (exp : e) : v = match exp with
+  | Val (v) -> v
+  | App (e1, e2) ->
+    (let v2 = eval e2 in
+     let v1 = eval e1 in
+     let reduct = match v1 with
+       | Fun (x, e) -> subst e [(x, v2)]
+       | _ -> failwith "type error" in
+     eval reduct)
+\end{verbatim}
+\caption{型無し$\lambda$計算とそのインタプリタ}
+\label{figure:lambda}
+\end{figure}
+
+簡約時に簡約前後の式を出力するために、図 \ref{figure:lambda} の関数 \texttt{eval} に、式を２つ受け取ってそれぞれ出力する関数 \texttt{memo} の呼び出しを挿入すると図 \ref{figure:memo_label} のようになる。図 \ref{figure:lambda} との違いはコメントの付いた2つの行が増えたのみである。
+
+\begin{figure}
+\begin{verbatim}
+let rec eval (exp : e) : v = match exp with
+  | Val (v) -> v
+  | App (e1, e2) ->
+    (let v2 = eval e2 in
+     let v1 = eval e1 in
+     let redex = App (Val v1, Val v2) in  (* 簡約前の式 *)
+     let reduct = match v1 with
+       | Fun (x, e) -> subst e [(x, v2)]
+       | _ -> failwith "type error" in
+     memo redex reduct;                   (* 出力 *)
+     eval reduct)
+\end{verbatim}
+\caption{出力関数を挿入した$\lambda$計算のインタプリタ}
+\label{figure:memo_label}
+\end{figure}
+
+図 \ref{figure:memo_label} の関数 \texttt{eval} にプログラム \texttt{((fun a -> a) ((fun b -> b) (fun c -> c)))} を表す構文木(\texttt{e}型)を渡すと、以下のような文字列が出力される。
+
+\begin{quote}
+\begin{verbatim}
+((fun b -> b) (fun c -> c))
+(fun c -> c)
+
+((fun a -> a) (fun c -> c))
+(fun c -> c)
+\end{verbatim}
+\end{quote}
+
+これは、期待した出力と比較すると、最初の簡約を表すステップ \texttt{((fun b -> b) (fun c -> c)) $\leadsto$ (fun c -> c)} の外側の式、すなわちコンテキストの \texttt{((fun a -> a) [.])} が不足している。
+コンテキストを含めた式全体を出力するためには、実行中の式の構文木の他にコンテキストの情報が必要である。図 \ref{figure:memo_label} の関数 \texttt{eval} では、実行中の式の構文木は引数として渡されるのに対して、コンテキストの情報は得られない。
+
+そこで、著者らは以前\cite{FCA2019}インタプリタ関数にコンテキスト情報のための引数を増やすことで式全体を再構成できるようにした。図\ref{figure:lambda}のインタプリタにその変更を施すと、図\ref{figure:lambda_stepper}のようになる。ここでは関数 \texttt{memo} は、簡約前の式、簡約後の式、コンテキスト情報の3つの引数をとり、コンテキスト情報を利用して簡約前後の式にそれぞれコンテキストを付加することで簡約前後の式全体を得て出力する。
+
+\begin{figure}
+\begin{verbatim}
+(* コンテキスト *)
+type c = CId             (* [.] *)
+       | CApp2 of e * c  (* [e [.]] *)
+       | CApp1 of v * c  (* [[.] v] *)
+
+(* 出力しながら再帰的に実行 *)
+let rec eval (exp : e) (c : c) : v = match exp with
+  | Val (v) -> v
+  | App (e1, e2) ->
+    (let v2 = eval e2 (CApp2 (e1, c)) in  (* コンテキストを1層深くする *)
+     let v1 = eval e1 (CApp1 (v2, c)) in  (* コンテキストを1層深くする *)
+     let redex = App (Val v1, Val v2) in
+     let reduct = match v1 with
+       | Fun (x, e) -> subst e [(x, v2)]
+       | _ -> failwith "type error" in
+     memo redex reduct c;                (* コンテキストを利用して式全体を出力 *)
+     eval reduct c)
+
+(* 実行を始める *)
+let stepper (exp : e) = eval exp CId
+\end{verbatim}
+\caption{型無し$\lambda$計算に対するステッパ}
+\label{figure:lambda_stepper}
+\end{figure}
+
+図\ref{figure:lambda_stepper}のように、コンテキストを表すデータ型を定義して再帰呼び出し時の構造に合わせて引数として渡すようにすれば、式全体を再構成して出力することが可能になる。以前の研究 \cite{FCA19} ではこの方法を用いて try-with 構文を含む言語のステッパを実装することに成功した。
+しかし、try-with のような制御構文を含む言語では、コンテキストを区切ってある区間のコンテキストを一度に捨てるなどの操作が必要になるため、コンテキストの構造が一次元的でなくなり、複雑なデータ構造の定義が必要になる可能性がある \cite{FCA19} 。
+
+ところが、図\ref{figure:lambda_stepper}の\texttt{c}型の定義を見ると、各コンストラクタはインタプリタ関数の「どの再帰呼び出しか」に対応している。コンテキストの型は評価順序によって定まるものであり、評価順序はインタプリタ関数で定義されているので、コンテキストを表すデータ型の定義はインタプリタ関数から導出できるものであると考えられる。次節以降ではその導出方法の1つを提案する。

@@ -31,7 +31,9 @@
 \setlength{\oddsidemargin}{\@tempdima} %% center
 \setlength{\evensidemargin}{\@tempdima} %% center
 
-\if@draft\pagestyle{plain}\else\pagestyle{empty}\fi
+%% Memo: Since(?) PPL2020, show page numbers even without the draft option.
+% \if@draft\pagestyle{plain}\else\pagestyle{empty}\fi
+\pagestyle{plain}
 \if@english
 \else
 \def\@listi{\leftmargin\leftmargini
@@ -203,3 +205,4 @@
 \endinput
 %%
 %% End of file 'jssst_ppl.cls'
+

@@ -1,17 +1,16 @@
-\documentclass[japanese]{jssst_ppl} %% 日本語 (default)
+\documentclass[japanese,draft]{jssst_ppl} %% 日本語 (default)
 % \documentclass[english]{jssst_ppl} %% English
 % \documentclass[japanese,draft]{jssst_ppl} %% You can use the draft option
-\pagestyle{plain}
+
 \usepackage{latexsym}
 \usepackage{alltt}
-\usepackage{color}
 \usepackage[dvipdfmx]{graphicx}
+\usepackage[dvipdfmx]{color}
+\usepackage{proof}
 
-\definecolor{lightgray}{rgb}{0.83, 0.83, 0.83}
-\definecolor{green}{rgb}{0.80, 0.93, 0.80}
-\definecolor{purple}{rgb}{0.80, 0.60, 1.00}
+\input{macro}
 
-\title{Incremental な OCaml ステッパの開発}
+\title{algebraic effects を含むプログラムのステップ実行}
 \author{古川 つきの, 浅井 健一}
 \inst{
   お茶の水女子大学\\
@@ -20,20 +19,25 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-ステッパはプログラムの実行過程を見せるツールである。ステッパはデバッグに利用できるほか、複雑なコマンド操作などを必要としないので、プログラミング初学者がプログラムの動作を理解する助けになりうる。しかし先行研究のステッパでは、実行時間が大きいプログラムを入力すると長い間処理が終わらず表示や操作ができないという問題があった。本研究では１度のステップ実行で１つの簡約の内容を出力する incremental なステッパを開発し、それに伴って「簡約されたプログラム」から元のプログラムを復元するための仕組みを提案し実装することによって、実行に時間がかかるプログラムのデバッグや動作の確認を可能にする。
+  ステッパはプログラムの実行過程を見せるツールである。これまで様々な言語に対するステッパが作られてきたが、shift/reset や algebraic effects といった継続を明示的に扱う言語機能をサポートするステッパは作られていない。継続を扱うプログラムの挙動を理解するのは困難なので、そういった言語に対応したステッパを作ることが本研究の目的である。
+  
+  ステッパは簡約のたびにその時点でのプログラム全体を出力するインタプリタなので、実行している部分式のコンテキストの情報が常に必要になる。継続を扱うような複雑な機能を持つ言語を対象にしたステッパでは、コンテキストがどのような構造をしているかが自明でない。そこで、通常のインタプリタ関数をプログラム変換することで機械的にコンテキストの情報を保持させ、ステッパを実装する方法を示す。
+  
+実際に型無しλ計算と algebraic effects から成る言語について実装方法を示し、それをもとにして実装した Multicore OCaml を対象としたステッパを紹介する。
 \end{abstract}
 
 \input{intro}
 
-\input{syntax}
+\input{context}
 
 \input{definition}
 
 \input{transform}
 
+\input{related}
 
+\input{conclusion}
 
 \bibliographystyle{jplain}
 \bibliography{stepper}
 \end{document}
-

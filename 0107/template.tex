@@ -1,23 +1,31 @@
-\documentclass[japanese]{jssst_ppl} %% 日本語 (default)
+\documentclass[japanese,draft]{jssst_ppl} %% 日本語 (default)
 % \documentclass[english]{jssst_ppl} %% English
 % \documentclass[japanese,draft]{jssst_ppl} %% You can use the draft option
 
-\title{タイトル}
-\author{第一 著者$^1$, 第二 著者$^2$}
-\inst{%
-$^1$ ○○大学××学科\\
-\texttt{sample@example.ac.jp}
-\medskip\par%所属の区切り
-$^2$ △△研究所\\
-\texttt{example@sample.net}
+\title{algebraic effects を含むプログラムのステップ実行}
+\author{古川 つきの, 浅井 健一}
+\inst{
+  お茶の水女子大学\\
+\texttt{furukawa.tsukino@is.ocha.ac.jp, asai@is.ocha.ac.jp}
 }
 \begin{document}
 \maketitle
 \begin{abstract}
-概要をここに書く.
+ステッパはプログラムの実行過程を見せるツールである。これまで様々な言語に対するステッパが作られてきたが、shift/reset や algebraic effects といった継続を明示的に扱う言語機能をサポートするステッパは作られていない。継続を扱うプログラムの挙動を理解するのは困難なので、そういった言語に対応したステッパを作ることが本研究の目的である。
+ステッパは簡約のたびにその時点でのプログラム全体を出力するインタプリタなので、実行している部分式のコンテキストの情報が常に必要になる。継続を扱うような複雑な機能を持つ言語を対象にしたステッパでは、コンテキストがどのような構造をしているかが自明でない。そこで、通常のインタプリタ関数をプログラム変換することで機械的にコンテキストの情報を保持させ、ステッパを実装する方法を示す。
+実際に型無しλ計算と algebraic effects から成る言語について実装方法を示し、それをもとにして実装した Multicore OCaml を対象としたステッパを紹介する。
 \end{abstract}
 
-\section{はじめに}
-後は, 通常どおりに書いてください
+\input{intro}
 
+\input{context}
+
+\input{syntax}
+
+\input{definition}
+
+\input{transform}
+
+\bibliographystyle{jplain}
+\bibliography{stepper}
 \end{document}
