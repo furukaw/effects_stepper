@@ -135,7 +135,16 @@ let stepper (e : e) : a = eval e FId (fun a -> a)
 \subsection{非関数化}
 \label{subsection:4defun}
 
-CPS 変換したことにより新たに現れた \texttt{a -> a} 型の匿名関数を非関数化する。図 \ref{figure:4defun}
+CPS 変換したことにより新たに現れた \texttt{a -> a} 型の匿名関数を非関数化する。非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、ステッパ関数は図 \ref{figure:4defun} に変換される。
+
+\begin{figure}
+\begin{verbatim}
+type k2 = GId
+        | GHandle of k * h * k2
+\end{verbatim}
+\caption{2回目の非関数化後の継続の型}
+\label{figure:k2_4defun}
+\end{figure}
 
 \begin{figure}
 \begin{verbatim}
@@ -186,4 +195,7 @@ let stepper (e : e) : a = eval e FId GId
 \caption{非関数化して CPS 変換して非関数化した CPS インタプリタ}
 \label{figure:4defun}
 \end{figure}
- 
+
+この非関数化によって、引数 \texttt{k} と引数 \texttt{k2} からコンテキスト全体の情報が得られるようになった。
+\ref{subsection:2defun} 節で示した例について比較する。\texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を表す構文木を関数 \texttt{eval} に渡して実行を始める際の継続 \texttt{k} は \ref{subsection:2defun} 節と同様に \texttt{{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}} である。そして継続 \texttt{k2} は \texttt{GHandle ()}
+具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
