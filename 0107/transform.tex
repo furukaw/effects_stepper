@@ -260,3 +260,27 @@ type v = Var of string
 \end{figure}
 
 関数 \texttt{memo : e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
+
+図\ref{figure:5memo}で\texttt{memo}の引数に渡している \texttt{redex} および \texttt{reduct} は、以下に示すこの言語の small-step の実行規則の簡約前後の式に対応する。
+
+\[
+\begin{array}{c}
+  (\texttt{h} = \texttt{handler \{return x -> e0, op1(x; k) -> e1, ..., opn(x; k) -> en\}}) \\
+  \ \\
+  \infer[(\textsf{AppFun})]
+        {\Eval{(fun x -> e) v}{e[v/x]}}
+        {}
+        \qquad
+        \infer[(\textsf{AppCont})]
+              {\Eval{(fun x => F[x]) v}{F[v]}}
+              {}  \\
+              \ \\
+              \infer[(\textsf{Return})]
+                    {\Eval{with h handle v}{e0[v/x]}}
+                    {}
+                    \qquad
+                    \infer[(\textsf{?})]
+                          {\Eval{with h handle e}{e0[v/x]}}
+                          {？} \\
+\end{array}
+\]

@@ -90,24 +90,3 @@ let interpreter (e : e) : a = eval e (fun v -> Return v)
 \caption{継続渡し形式で書かれたインタプリタ}
 \label{figure:1cps}
 \end{figure}
-
-図\ref{figure:1cps} のインタプリタによって、プログラムは以下の規則のように評価される。
-
-\[
-\begin{array}{c}
-  (\texttt{h} = \texttt{handler \{return x -> e0, op1(x; k) -> e1, ..., opn(x; k) -> en\}}) \\
-  \ \\
-  \infer[(\textsf{Fun})]
-        {\Eval{fun x -> e}{fun x -> e}}
-        {}
-        \qquad
-  \infer[(\textsf{App})]
-        {\Eval{fun x -> e}{e'[v2/x]}}
-        {\Eval{e1}{fun x -> e'}
-          &\Eval{e2}{v2}} \\
-        \ \\
-        \infer[(\textsf{Return})]
-              {\Eval{with h handle e}{e0[v/x]}}
-              {？} \\
-\end{array}
-\]
