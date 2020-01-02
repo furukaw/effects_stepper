@@ -151,3 +151,68 @@ publisher = {サイエンス社},
 year = {2007},
 month = feb,
 }
+
+@inproceedings{10.1145/2500365.2500590,
+ author = {Kammar, Ohad and Lindley, Sam and Oury, Nicolas},
+ title = {Handlers in Action},
+ year = {2013},
+ isbn = {9781450323260},
+ publisher = {Association for Computing Machinery},
+ address = {New York, NY, USA},
+ url = {https://doi.org/10.1145/2500365.2500590},
+ doi = {10.1145/2500365.2500590},
+ booktitle = {Proceedings of the 18th ACM SIGPLAN International Conference on Functional Programming},
+ pages = {145–158},
+ numpages = {14},
+ keywords = {haskell, modularity, monads, algebraic effects, continuations, effect handlers, effect typing},
+ location = {Boston, Massachusetts, USA},
+ series = {ICFP ’13}
+}
+
+@InProceedings{10.1007/978-3-030-02768-1_22,
+author="Hillerstr{\"o}m, Daniel
+and Lindley, Sam",
+editor="Ryu, Sukyoung",
+title="Shallow Effect Handlers",
+booktitle="Programming Languages and Systems",
+year="2018",
+publisher="Springer International Publishing",
+address="Cham",
+pages="415--435",
+abstract="Plotkin and Pretnar's effect handlers offer a versatile abstraction for modular programming with user-defined effects. Traditional deep handlers are defined by folds over computation trees. In this paper we study shallow handlers, defined instead by case splits over computation trees. We show that deep and shallow handlers can simulate one another up to specific notions of administrative reduction. We present the first formal accounts of an abstract machine for shallow handlers and a Continuation Passing Style (CPS) translation for shallow handlers taking special care to avoid memory leaks. We provide implementations in the Links web programming language and empirically verify that neither implementation introduces unwarranted memory leaks.",
+isbn="978-3-030-02768-1"
+}
+
+@inproceedings{e6cb0c3222794e48bf38cf44e46fe4aa,
+title = "Continuation passing style for effect handlers",
+abstract = "We present Continuation Passing Style (CPS) translations for Plotkin and Pretnar's effect handlers with Hillerstr{\"o}m and Lindley's row-typed fine-grain call-by-value calculus of effect handlers as the source language. CPS translations of handlers are interesting theoretically, to explain the semantics of handlers, and also offer a practical implementation technique that does not require special support in the target language's runtime.We begin with a first-order CPS translation into untyped lambda calculus which manages a stack of continuations and handlers as a curried sequence of arguments. We then refine the initial CPS translation first by uncurrying it to yield a properly tail-recursive translation and second by making it higher-order in order to contract administrative redexes at translation time. We prove that the higher-order CPS translation simulates effect handler reduction. We have implemented the higher-order CPS translation as a JavaScript backend for the Links programming language.",
+keywords = "effect handlers, delimited control, continuation passing system, CPS, algebraic effects",
+author = "Daniel Hillerstr{\"o}m and Sam Lindley and Robert Atkey and KC Sivaramakrishnan",
+year = "2017",
+month = "9",
+day = "3",
+doi = "10.4230/LIPIcs.FSCD.2017.18",
+language = "English",
+series = "Leibniz International Proceedings in Informatics (LIPIcs)",
+pages = "18:1--18:19",
+editor = "Dale Miller",
+booktitle = "2nd International Conference on Formal Structures for Computation and Deduction (FSCD 2017)",
+}
+
+@article{10.1145/3158096,
+author = {Biernacki, Dariusz and Pir\'{o}g, Maciej and Polesiuk, Piotr and Sieczkowski, Filip},
+title = {Handle with Care: Relational Interpretation of Algebraic Effects and Handlers},
+year = {2017},
+issue_date = {December 2017},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+volume = {2},
+number = {POPL},
+url = {https://doi.org/10.1145/3158096},
+doi = {10.1145/3158096},
+journal = {Proc. ACM Program. Lang.},
+month = dec,
+articleno = {Article 8},
+numpages = {30},
+keywords = {row polymorphism, algebraic effect, logical relation}
+}
