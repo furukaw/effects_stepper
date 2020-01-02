@@ -198,7 +198,7 @@ let stepper (e : e) : a = eval e FId GId
 \subsection{出力}
 \label{subsection:memo}
 
-\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が足した後の関数 \texttt{apply^_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
+\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が副作用を足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
 
 \begin{figure}
 \begin{verbatim}
@@ -246,3 +246,17 @@ and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
 \caption{変換の後、出力関数を足して得られるステッパ}
 \label{figure:5memo}
 \end{figure}
+
+ステップ表示では継続値の内容も見えるようにしたいので、継続を文字列で表す必要がある。ここでは継続を関数 \texttt{fun x -> e} のように \texttt{fun x => e} と表すこととする。すると各継続が仮引数名を持つ必要があるので構文木に追加する（図\ref{figure:v_5memo}）。新しい継続値を作る時に、プログラム中で使われていない変数名を生成する関数 \texttt{gen\_var\_name} を利用して仮引数を定めている。
+
+\begin{figure}
+\begin{verbatim}
+type v = Var of string
+       | Fun of string * e
+       | Cont of e * (k -> k)
+\end{verbatim}
+\caption{継続を文字列で表すために変更した値の型}
+\label{figure:v_5memo}
+\end{figure}
+
+関数 \texttt{memo : e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
