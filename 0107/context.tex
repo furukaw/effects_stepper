@@ -17,21 +17,24 @@
 
 \begin{figure}
 \begin{verbatim}
-type v = Var of string
-       | Fun of string * e
+(* 値 *)
+type v = Var of string      (* x *)
+       | Fun of string * e  (* fun x -> e *)
 
-type e = Val of v
-       | App of e * e
+(* 式 *)
+type e = Val of v      (* 値 *)
+       | App of e * e  (* e e *)
 
+(* インタプリタ *)
 let rec eval (exp : e) : v = match exp with
   | Val (v) -> v
   | App (e1, e2) ->
     (let v2 = eval e2 in
      let v1 = eval e1 in
      let reduct = match v1 with
-       | Fun (x, e) -> subst e [(x, v2)]
+       | Fun (x, e) -> subst e [(x, v2)]  (* e[v2/x] *)
        | _ -> failwith "type error" in
-     eval reduct)
+     eval reduct)                         (* 代入後の式を実行 *)
 \end{verbatim}
 \caption{型無し$\lambda$計算とそのインタプリタ}
 \label{figure:lambda}
@@ -41,6 +44,7 @@ let rec eval (exp : e) : v = match exp with
 
 \begin{figure}
 \begin{verbatim}
+(* 不十分なステップ出力をするインタプリタ *)
 let rec eval (exp : e) : v = match exp with
   | Val (v) -> v
   | App (e1, e2) ->
@@ -91,7 +95,7 @@ let rec eval (exp : e) (c : c) : v = match exp with
      let reduct = match v1 with
        | Fun (x, e) -> subst e [(x, v2)]
        | _ -> failwith "type error" in
-     memo redex reduct c;                (* コンテキストを利用して式全体を出力 *)
+     memo redex reduct c;                 (* コンテキストを利用して式全体を出力 *)
      eval reduct c)
 
 (* 実行を始める *)
