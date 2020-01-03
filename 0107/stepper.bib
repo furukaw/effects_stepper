@@ -231,3 +231,35 @@ author = "Matija Pretnar",
 keywords = "algebraic effects, handlers, effect system, semantics, logic, tutorial",
 abstract = "This paper is a tutorial on algebraic effects and handlers. In it, we explain what algebraic effects are, give ample examples to explain how handlers work, define an operational semantics and a type & effect system, show how one can reason about effects, and give pointers for further reading."
 }
+
+@comment{CPS変換}
+@article{PLOTKIN1975125,
+title = "Call-by-name, call-by-value and the λ-calculus",
+journal = "Theoretical Computer Science",
+volume = "1",
+number = "2",
+pages = "125 - 159",
+year = "1975",
+issn = "0304-3975",
+doi = "https://doi.org/10.1016/0304-3975(75)90017-1",
+url = "http://www.sciencedirect.com/science/article/pii/0304397575900171",
+author = "G.D. Plotkin",
+abstract = "This paper examines the old question of the relationship between ISWIM and the λ-calculus, using the distinction between call-by-value and call-by-name. It is held that the relationship should be mediated by a standardisation theorem. Since this leads to difficulties, a new λ-calculus is introduced whose standardisation theorem gives a good correspondence with ISWIM as given by the SECD machine, but without the letrec feature. Next a call-by-name variant of ISWIM is introduced which is in an analogous correspondence withthe usual λ-calculus. The relation between call-by-value and call-by-name is then studied by giving simulations of each language by the other and interpretations of each calculus in the other. These are obtained as another application of the continuation technique. Some emphasis is placed throughout on the notion of operational equality (or contextual equality). If terms can be proved equal in a calculus they are operationally equal in the corresponding language. Unfortunately, operational equality is not preserved by either of the simulations."
+}
+
+@comment{非関数化}
+@Article{Reynolds1998,
+author="Reynolds, John C.",
+title="Definitional Interpreters for Higher-Order Programming Languages",
+journal="Higher-Order and Symbolic Computation",
+year="1998",
+month="Dec",
+day="01",
+volume="11",
+number="4",
+pages="363--397",
+abstract="Higher-order programming languages (i.e., languages in which procedures or labels can occur as values) are usually defined by interpreters that are themselves written in a programming language based on the lambda calculus (i.e., an applicative language such as pure LISP). Examples include McCarthy's definition of LISP, Landin's SECD machine, the Vienna definition of PL/I, Reynolds' definitions of GEDANKEN, and recent unpublished work by L. Morris and C. Wadsworth. Such definitions can be classified according to whether the interpreter contains higher-order functions, and whether the order of application (i.e., call by value versus call by name) in the defined language depends upon the order of application in the defining language. As an example, we consider the definition of a simple applicative programming language by means of an interpreter written in a similar language. Definitions in each of the above classifications are derived from one another by informal but constructive methods. The treatment of imperative features such as jumps and assignment is also discussed.",
+issn="1573-0557",
+doi="10.1023/A:1010027404223",
+url="https://doi.org/10.1023/A:1010027404223"
+}
