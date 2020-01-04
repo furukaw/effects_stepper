@@ -1,7 +1,7 @@
 (* 値 *)
 type v = Var of string              (* x *)
        | Fun of string * e          (* fun x -> e *)
-       | Cont of string * (k -> k)
+       | Cont of (k -> k)
 (* ハンドラ *)
 and h = {
   return : string * e;                       (* handler {return x -> e,      *)
@@ -36,9 +36,7 @@ let rec plug_in_handle (e : e) (k : k) : e = match k with
 let rec v_to_string (v : v) : string = match v with
   | Var (x) -> x
   | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ e_to_string e ^ ")"
-  | Cont (x, k) ->
-    "(fun " ^ x ^ " => " ^
-    e_to_string (plug_in_handle (Val (Var x)) (k FId)) ^ ")"
+  | Cont (k) -> "<cont>"
 
 and h_to_string : h -> string = fun {return; ops} ->
   let return_strs = match return with (x, e) ->
