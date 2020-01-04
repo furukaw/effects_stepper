@@ -2,12 +2,15 @@ open Syntax
 open Util
 open Memo
 
+(* CPS インタプリタを非関数化して CPS 変換した関数 *)
 let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | Val (v) -> apply_in k v k2
   | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
   | Op (name, e) -> eval e (FOp (name, k)) k2
-  | With (h, e) -> eval e FId (fun a -> apply_handler k h a k2)
+  | With (h, e) ->
+    eval e FId (fun a -> apply_handler k h a k2) (* GHandle に変換される関数 *)
 
+(* 継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in
@@ -22,7 +25,7 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
      | _ -> failwith "type error")
   | FOp (name, k) -> k2 (OpCall (name, v, k))
   | FCall (k_last, h, k') ->
-    apply_in k' v (fun a -> apply_handler k_last h a k2)
+    apply_in k' v (fun a -> apply_handler k_last h a k2) (* GHandle に変換される関数 *)
 
 and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
@@ -40,4 +43,4 @@ and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
        let reduct = subst e [(x, v); (k, cont_value)] in
        eval reduct k_last k2)
 
-let stepper (e : e) : a = eval e FId (fun a -> a)
+let stepper (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される関数 *)

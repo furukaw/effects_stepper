@@ -9,17 +9,17 @@
 まず、図\ref{figure:1cps}のプログラムを非関数化する。具体的には以下を施す。
 \begin{enumerate}
 \item \texttt{k} 型すなわち \texttt{v -> a} 型の匿名関数全てを、関数内に現れる全ての自由変数を引数に持つコンストラクタに分類し、継続の型 \texttt{k} をそれらのコンストラクタから構成されるヴァリアント型に変更する(図\ref{figure:k_2defun} のようになる)。
-\item \texttt{v -> a} 型の匿名関数全てを、該当するコンストラクタに置き換える
-\item 継続に引数を渡している部分 \texttt{k v} を \texttt{apply\_k k v} に置き換え、意味が変わらないように関数 \texttt{apply\_k} を定義する
+\item \texttt{v -> a} 型の匿名関数全てを、該当するコンストラクタに置き換える。
+\item 継続に引数を渡している部分 \texttt{k v} を \texttt{apply\_k k v} に置き換え、意味が変わらないように関数 \texttt{apply\_k} を定義する。
 \end{enumerate}
 
 \begin{figure}
 \begin{verbatim}
-and k = FId
-      | FApp2 of e * k
-      | FApp1 of v * k
-      | FOp of string * k
-      | FCall of k * h * k
+and k = FId                 (* [.] *)
+      | FApp2 of e * k      (* [e [.]] *)
+      | FApp1 of v * k      (* [[.] v] *)
+      | FOp of string * k   (* [op [.]] *)
+      | FCall of k * h * k  (* [with h handle [[.]]] *)
 \end{verbatim}
 \caption{非関数化後の継続の型}
 \label{figure:k_2defun}
@@ -86,12 +86,15 @@ let stepper (e : e) : a = eval e FId
 
 \begin{figure}
 \begin{verbatim}
+(* CPS インタプリタを非関数化して CPS 変換した関数 *)
 let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | Val (v) -> apply_in k v k2
   | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
   | Op (name, e) -> eval e (FOp (name, k)) k2
-  | With (h, e) -> eval e FId (fun a -> apply_handler k h a k2)
+  | With (h, e) ->
+    eval e FId (fun a -> apply_handler k h a k2) (* GHandle に変換される関数 *)
 
+(* 継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in
@@ -101,12 +104,12 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
      | Fun (x, e) ->
        let reduct = subst e [(x, v2)] in
        eval reduct k k2
-     | Cont (k') ->
+     | Cont (x, k') ->
        apply_in (k' k) v2 k2
      | _ -> failwith "type error")
   | FOp (name, k) -> k2 (OpCall (name, v, k))
   | FCall (k_last, h, k') ->
-    apply_in k' v (fun a -> apply_handler k_last h a k2)
+    apply_in k' v (fun a -> apply_handler k_last h a k2) (* GHandle に変換される関数 *)
 
 and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
@@ -118,12 +121,13 @@ and apply_handler (k_last : k) (h : h) (a : a) (k2 : k2) : a = match a with
      | None ->
        k2 (OpCall (name, v, FCall (k_last, h, k')))
      | Some (x, k, e) ->
-      let cont_value =
-         Cont (fun k_last -> FCall (k_last, h, k')) in
+       let new_var = gen_var_name () in
+       let cont_value =
+         Cont (new_var, fun k_last -> FCall (k_last, h, k')) in
        let reduct = subst e [(x, v); (k, cont_value)] in
        eval reduct k_last k2)
 
-let stepper (e : e) : a = eval e FId (fun a -> a)
+let stepper (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される関数 *)
 \end{verbatim}
 \caption{CPS 変換した非関数化した CPS インタプリタ}
 \label{figure:3cps}
