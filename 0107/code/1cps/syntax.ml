@@ -1,7 +1,7 @@
 (* 値 *)
-type v = Var of string              (* x *)
-       | Fun of string * e          (* fun x -> e *)
-       | Cont of string * (k -> k)  (* 継続 fun x => ... *)
+type v = Var of string      (* x *)
+       | Fun of string * e  (* fun x -> e *)
+       | Cont of (k -> k)   (* 継続 fun x => ... *)
 (* ハンドラ *)
 and h = {
   return : string * e;                       (* handler {return x -> e,      *)
@@ -12,17 +12,17 @@ and e = Val of v          (* v *)
       | App of e * e      (* e e *)
       | Op of string * e  (* op e *)
       | With of h * e     (* with h handle e *)
-(* 継続 *)
+(* handle 内の継続 *)
 and k = v -> a
-(* 実行結果 *)
-and a = Return of v
-      | OpCall of string * v * k
+(* handle 内の実行結果 *)
+and a = Return of v               (* 値になった *)
+      | OpCall of string * v * k  (* オペレーションが呼び出された *)
 
 (* 値を文字列にする関数 *)
 let rec v_to_string (v : v) : string = match v with
   | Var (x) -> x
   | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ e_to_string e ^ ")"
-  | Cont (x, k) -> "<cont>"
+  | Cont (k) -> "<cont>"
 
 and h_to_string : h -> string = fun {return; ops} ->
   let return_strs = match return with (x, e) ->

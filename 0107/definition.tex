@@ -3,19 +3,48 @@
 
 この節では、型無し$\lambda$計算と algebraic effects からなる言語とそのインタプリタを定義する。
 
-\subsection{対象言語の構文}
+\subsection{algebraic effects}
+\label{subsection:algebraic effects}
+
+型無し$\lambda$計算と algebraic effects からなる対象言語を図\ref{figure:abstract_syntax}の \texttt{e} と定義する。ただし継続 \texttt{fun x => e} は入力プログラムに含まれることはなく、実行の過程で現れる。
+
+\begin{figure}
+\begin{verbatim}
+v  :=                                      (値)
+      x                                    変数
+    | fun x -> e                           関数
+    | fun x => e                           継続
+e  :=                                      (式)
+      v                                    値
+    | e e                                  関数適用
+    | op e                                 オペレーション呼び出し
+    | with h handle e                      ハンドル
+h  :=                                      (ハンドラ)
+      {return x -> e,                      return 節
+       op(x; k) -> e, ..., op(x; k) -> e}  オペレーション節(0個以上)
+\end{verbatim}
+\caption{対象言語の構文}
+\label{figure:abstract_syntax}
+\end{figure}
+
+意味論については \ref{subsection:1cps} 節で厳密に扱うが、例えばプログラム \texttt{(with handler \{return x -> (fun a -> x), op(x, k) -> k x\} handle ((op (fun b -> b)) 2)) 3} は以下のように実行される。
+
+right-to-left て評価するとして、まず関数適用の引数部分 \texttt{3} を実行し、値 \texttt{3} を得る。次に関数部分の \texttt{with ... handle ...} を実行する。\texttt{with ... handle ...} ではまず \texttt{handle} 以降の \texttt{((op (fun b -> b)) 2)} を実行する。これは関数適用なのでまず引数部分の \texttt{2} を実行し、値 \texttt{2} を得る。次に関数部分 \texttt{(op (fun b -> b))} はオペレーション呼び出しであり、まず引数 \texttt{(fun b -> b)} を実行する。値 \texttt{(fun b -> b)} を得たら、\texttt{(op (fun b -> b))} を囲んでいる \texttt{with ... handle ...} を参照して、そこにオペレーション \texttt{op} が定義されているかどうかを見る。ここでは \texttt{op(x, k) -> k x} と定義されている。すると、\texttt{with ... handle ...} の部分が \texttt{(k x)[(fun b -> b)/x, (fun y => (with handler \{return x -> (fun a -> x), op(x, k) -> k x\} handle (y 2)))/k} に簡約され、次はこの式の実行に移る。この \texttt{k} に代入する値は、 \texttt{with ... handle ...} 式までの限定継続である。引数部分と関数部分をそれぞれ実行し、これらは元々値になっているのでそのままの値が返る。そして \texttt{(fun b -> b)} に継続 \texttt{(fun y => (with ... handle (y 2)))} を適用すると \texttt{(with ... handle ((fun b -> b) 2))} になるが、この適用は継続の適用なので、\texttt{fun b -> b} および \texttt{2} は既に実行した後だということが分かっており、次には \texttt{(fun b -> b) 2} の関数適用をする。これは \texttt{2} になり、ここで \texttt{handle ...} 内が値となった。すると今度は \texttt{with ... handle ...} がハンドラの return 節の \texttt{fun a -> x} に簡約される。このとき \texttt{x} は \texttt{handle ...} 内の値の \texttt{2} である。よってここでプログラム全体は \texttt{(fun b -> 2) 3} になっており、この関数適用をして最終結果は \texttt{2} になる。
+
+もし呼び出されたオペレーションがハンドラで定義されていなければさらに外のハンドラを参照して、その時の継続値は定義が見つかったハンドラまでの限定継続である。見つからなかった場合はエラーを起こす。
+
+\subsection{構文の定義}
 \label{subsection:syntax}
 
 対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
-値のコンストラクタ \texttt{Cont} は継続を表すコンストラクタであり、入力プログラムに含まれることはないが、ステップ実行の過程で現れる。
 式の型 \texttt{e} で表されるものが対象言語のプログラムである。
 
 \begin{figure}
 \begin{verbatim}
 (* 値 *)
-type v = Var of string              (* x *)
-       | Fun of string * e          (* fun x -> e *)
-       | Cont of string * (k -> k)  (* 継続 fun x => ... *)
+type v = Var of string      (* x *)
+       | Fun of string * e  (* fun x -> e *)
+       | Cont of (k -> k)   (* 継続 fun x => ... *)
 (* ハンドラ *)
 and h = {
   return : string * e;                       (* handler {return x -> e,      *)
@@ -26,17 +55,20 @@ and e = Val of v          (* v *)
       | App of e * e      (* e e *)
       | Op of string * e  (* op e *)
       | With of h * e     (* with h handle e *)
-(* 継続 *)
+(* handle 内の継続 *)
 and k = v -> a
-(* 実行結果 *)
-and a = Return of v               (* 正常終了 *)
-      | OpCall of string * v * k  (* オペレーション呼び出し *)
+(* handle 内の実行結果 *)
+and a = Return of v               (* 値になった *)
+      | OpCall of string * v * k  (* オペレーションが呼び出された *)
 \end{verbatim}
 \caption{対象言語の定義}
 \label{figure:syntax}
 \end{figure}
 
+継続の型 \texttt{k} は、インタプリタのメタ継続を表す。
+
 \subsection{CPS インタプリタ}
+\label{subsection:1cps}
 
 図 \ref{figure:syntax} の言語に対する、call-by-value かつ right-to-left のインタプリタを図 \ref{figure:1cps} に定義する。ただし、関数 \texttt{subst :\ e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e} の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v} と値 \texttt{cont\_value} を代入した式を返す。関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数で、例えば \texttt{handler \{return x -> x, op1(y, k) -> k y\}} を表すデータを \texttt{h} とすると \texttt{search\_op "op2" h} は \texttt{None} を返し \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var "y"))} を返す。
 
