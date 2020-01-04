@@ -29,7 +29,7 @@ and apply_handler (k : k) (h : h) (a : a) : a = match a with
   | OpCall (name, v, k') ->        (* オペレーション呼び出しがあったとき *)
     (match search_op name h with
      | None ->                     (* ハンドラで定義されていない場合、 *)
-       OpCall (name, v, (fun v ->  (* OpCall の継続に現在の継続を合成 *)
+       OpCall (name, v, (fun v ->  (* OpCall の継続の後に現在の継続を合成 *)
            let a' = k' v in
            apply_handler k h a'))
      | Some (x, y, e) ->           (* ハンドラで定義されている場合、 *)
