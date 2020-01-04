@@ -15,6 +15,8 @@
 
 ステッパはインタプリタにステップ出力機能が加わったものなので、通常のインタプリタ関数に書き加えることで実装できる。図 \ref{figure:lambda} に OCaml による型無し$\lambda$計算の定義とインタプリタの実装を示す。関数 \texttt{subst : e -> (string * v) list -> e} は代入関数であり、\texttt{subst e [(x, v)]} は式 \texttt{e} の中の全ての変数 \texttt{x} を値 \texttt{v} に置換した式を返す。
 
+ステッパは small-step での実行過程を見せるものであるが、small-step でなく big-step のインタプリタを基にして作ることで、関数適用や配列に対する処理やループ等のひとまとまりの実行の開始と終了を検知して「その部分の最後のステップまで飛ばす」等の機能を作ることが容易になる\ref{FCA19}ため、big-step のインタプリタを利用している。
+
 \begin{figure}
 \begin{verbatim}
 (* 値 *)
