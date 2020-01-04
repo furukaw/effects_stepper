@@ -2,7 +2,7 @@ open Syntax
 open Util
 open Memo
 
-(* インタプリタ *)
+(* CPS インタプリタ *)
 let rec eval (exp : e) (k : k) : a = match exp with
   | Val (v) -> k v  (* 継続に値を渡す *)
   | App (e1, e2) ->
