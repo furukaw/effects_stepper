@@ -28,8 +28,8 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
        apply_in (k' k) v2 k2
      | _ -> failwith "type error")
   | FOp (name, k) -> apply_out k2 (OpCall (name, v, k))
-  | FCall (k_last, h, k') ->
-    apply_in k' v (GHandle (k_last, h, k2))
+  | FCall (k'', h, k') ->
+    apply_in k' v (GHandle (k'', h, k2))
 
 (* 全体の継続を適用する関数 *)
 and apply_out (k2 : k2) (a : a) : a = match k2 with
@@ -42,7 +42,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
        let redex = With (h, Val v) in (* with handler{return x -> e} handle v *)
-       let reduct = (subst e [(x, v)]) in  (* e[v/x] *)
+       let reduct = subst e [(x, v)] in  (* e[v/x] *)
        memo redex reduct (k, k2);
        eval reduct k k2)
   | OpCall (name, v, k') ->
