@@ -15,8 +15,8 @@ algebraic effects は、例外や状態などの副作用を表現するため�
 特徴は、副作用の意味がそれを処理するハンドラ部分で決まるところである。
 例えば、以下のプログラムを考える。
 \begin{verbatim}
-with {return x -> x;
-      op(x, k) -> k (x + 1)}
+with handler {return x -> x;
+              op(x; k) -> k (x + 1)}
 handle 10 + op(3)
 \end{verbatim}
 \texttt{with h handle e} は、\texttt{h} というハンドラ
@@ -80,8 +80,8 @@ e  :=                                      (式)
     | op e                                 オペレーション呼び出し
     | with h handle e                      ハンドル
 h  :=                                      (ハンドラ)
-      {return x -> e;                      return 節
-       op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
+      handler {return x -> e;                      return 節
+               op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
 \end{verbatim}
 \caption{対象言語の構文}
 \label{figure:abstract_syntax}
@@ -258,7 +258,7 @@ deep ハンドラと呼ばれる方式 \cite{10.1145/2500365.2500590} を採用�
 shallow ハンドラと呼ばれる方式 \cite{10.1007/978-3-030-02768-1_22} を
 採用する場合は、\texttt{k} 内の実行は現在のハンドラ \texttt{h} の外で
 行われるので、\texttt{cont\_value} の代わりに
-単に \texttt{fun k'' -> fnu v -> k'' (k' v)} とすれば良い。
+単に \texttt{fun k'' -> fun v -> k'' (k' v)} とすれば良い。
 
 このようにして作られた限定継続が呼び出されるのは \texttt{eval} の
 \texttt{App} の \texttt{Cont} のケースである。
