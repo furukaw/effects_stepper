@@ -1,19 +1,44 @@
 \section{インタプリタの変換}
 \label{section:transform}
 
-本節では、\ref{section:definition}節で定義したインタプリタ(図\ref{figure:1cps})を変換することで、コンテキストの情報を保持するインタプリタを得る方法を示す。用いるプログラム変換は非関数化とCPS変換の２種類である。これらの変換はプログラムの動作を変えないので、変換の結果得られるインタプリタと図\ref{figure:1cps}のインタプリタは、同じ引数 \texttt{e} に対して同じ値を返す。
+本節では、\ref{section:definition}節で定義したインタプリタ
+(図\ref{figure:1cps})に対して、正当性の保証された２種類のプログラム変
+換（非関数化と CPS 変換）をかけることで、コンテキストを明示的に保持する
+インタプリタを得て、そこからステッパを作成する方法を示す。
+
+%本節では、\ref{section:definition}節で定義したインタプリタ(図\ref{figure:1cps})を変換することで、コンテキストの情報を保持するインタプリタを得る方法を示す。用いるプログラム変換は非関数化とCPS変換の２種類である。これらの変換はプログラムの動作を変えないので、変換の結果得られるインタプリタと図\ref{figure:1cps}のインタプリタは、同じ引数 \texttt{e} に対して同じ値を返す。
 
 \subsection{非関数化}
 \label{section:2defun}
 
-まず、図\ref{figure:1cps}のプログラムの \texttt{k} 型の$\lambda$式を非関数化する。非関数化は以下の手順によって行われる。
+\ref{section:context}節で示したインタプリタは直接形式だったので、コン
+テキスト情報を得るのに CPS 変換をかけてから非関数化をかけたが、
+{section:definition}節で示したインタプリタはオペレーション呼び出しをサ
+ポートするため最初から CPS で書かれている。
+したがって、ここではまず非関数化をかける。
+
+非関数化というのは、高階関数を１階のデータ構造で表現する方法である。高
+階関数は全てその自由変数を引数に持つような１階のデータ構造となり、高階
+関数を呼び出していた部分は apply 関数の呼び出しとなる。この apply 関数
+は、高階関数が呼び出されていたら行ったであろう処理を行うように別途、定
+義されるものである。この変換は機械的に行うことができる。
+
+具体的に図\ref{figure:1cps}のプログラムの継続 \texttt{k} 型の$\lambda$式を
+非関数化するには次のようにする。
+結果は図 \ref{figure:k_2defun}と図 \ref{figure:2defun}のようになる。
+
+%まず、図\ref{figure:1cps}のプログラムの \texttt{k} 型の$\lambda$式を非関数化する。非関数化は以下の手順によって行われる。
 \begin{enumerate}
-\item $\lambda$式をコンストラクタに置き換える。その際、$\lambda$式内の自由変数はコンストラクタの引数にする。
-\item 関数を表すコンストラクタと引数を受け取って中身を実行するような \texttt{apply} 関数を定義する。
-\item $\lambda$式を呼び出す部分を、\texttt{apply} 関数にコンストラクタと引数を渡すように変更する。
+\item 継続を表す$\lambda$式をコンストラクタに置き換える。その際、$\lambda$式内の自由変数はコンストラクタの引数にする。
+その結果、得られるデータ構造は図 \ref{figure:k_2defun}のようになる。
+図 \ref{figure:1cps}の中には、コメントとしてどの関数がどのコンストラク
+タに置き換わったのかが書かれている。
+\item 関数を表すコンストラクタと引数を受け取って中身を実行するような apply 関数を定義する。
+これは、図 \ref{figure:2defun}では \texttt{apply\_in} と呼ばれている。
+\item $\lambda$式を呼び出す部分を、apply 関数にコンストラクタと引数を渡すように変更する。
 \end{enumerate}
 
-図\ref{figure:1cps}のインタプリタの \texttt{k} 型すなわち \texttt{v -> a} 型の$\lambda$式を非関数化すると、型 \texttt{k} の定義は図 \ref{figure:k_2defun} のようにヴァリアント型になり、インタプリタは図\ref{figure:2defun}に書き換わる。
+%図\ref{figure:1cps}のインタプリタの \texttt{k} 型すなわち \texttt{v -> a} 型の$\lambda$式を非関数化すると、型 \texttt{k} の定義は図 \ref{figure:k_2defun} のようにヴァリアント型になり、インタプリタは図\ref{figure:2defun}に書き換わる。
 
 \begin{figure}
 \begin{verbatim}
@@ -77,8 +102,20 @@ let stepper (e : e) : a = eval e FId
 \label{figure:2defun}
 \end{figure}
 
-非関数化したことで継続 \texttt{k} がコンストラクタとして表されるようになったので、継続の構造を参照することや、継続を部分的に書き換えることが可能になった。
-具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
+非関数化したインタプリタを見るといくつかのことがわかる。
+まず、図 \ref{figure:k_2defun}を見ると、ラムダ計算の通常の評価文脈に加
+えてオペレーション呼び出しの引数を実行するフレーム \texttt{FOp} と
+捕捉された継続が呼び出されたときのフレーム \texttt{FCall}
+
+（書き途中。ここで、この時点で得られたものをまとめるとともに、ステッパ
+にするには何が足りていないかを書きたい。そして、それを、さらに CPS 変
+換して非関数化する動機にしたい。）
+
+（手を加えたのはここまで。この先の実装が定まらないと書き進められない感
+じ。）
+
+%非関数化したことで継続 \texttt{k} がコンストラクタとして表されるようになったので、継続の構造を参照することや、継続を部分的に書き換えることが可能になった。
+%具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
 
 \subsection{CPS 変換}
 \label{subsection:3cps}
