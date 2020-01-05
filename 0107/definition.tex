@@ -252,22 +252,22 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 限定継続 \texttt{k'}」に「現在のハンドラ \texttt{h}」と
 「\texttt{cont\_value} が呼び出された時の継続 \texttt{k''}」
 を合成したものである。
-ここで、\texttt{k} 内の実行を現在のハンドラ \texttt{h} の中で行うのは
-deep ハンドラと呼ばれる方式 \cite{10.1145/2500365.2500590} を採用している
-ためである。
-shallow ハンドラと呼ばれる方式 \cite{10.1007/978-3-030-02768-1_22} を
-採用する場合は、\texttt{k} 内の実行は現在のハンドラ \texttt{h} の外で
-行われるので、\texttt{cont\_value} の代わりに
-単に \texttt{fun k'' -> fun v -> k'' (k' v)} とすれば良い。
+%% ここで、\texttt{k} 内の実行を現在のハンドラ \texttt{h} の中で行うのは
+%% deep ハンドラと呼ばれる方式 \cite{10.1145/2500365.2500590} を採用している
+%% ためである。
+%% shallow ハンドラと呼ばれる方式 \cite{10.1007/978-3-030-02768-1_22} を
+%% 採用する場合は、\texttt{k} 内の実行は現在のハンドラ \texttt{h} の外で
+%% 行われるので、\texttt{cont\_value} の代わりに
+%% 単に \texttt{fun k'' -> fun v -> k'' (k' v)} とすれば良い。
 
 このようにして作られた限定継続が呼び出されるのは \texttt{eval} の
 \texttt{App} の \texttt{Cont} のケースである。
 \texttt{cont\_value} は、この継続が呼び出された時点での
 限定継続が必要なので、それを \texttt{cont\_value k} のように渡してから
 値 \texttt{v2} を渡している。
-shallow ハンドラを採用している場合は、\texttt{Cont} に格納する
-継続を単に \texttt{k'} として、それを適用する際に
-\texttt{k (cont\_value v2)} とすれば良い。
+%% shallow ハンドラを採用している場合は、\texttt{Cont} に格納する
+%% 継続を単に \texttt{k'} として、それを適用する際に
+%% \texttt{k (cont\_value v2)} とすれば良い。
 
 これまで、algebraic effects の意味論は small-step のもの
 \cite{10.1145/2500365.2500590, PRETNAR201519}
@@ -277,8 +277,8 @@ CPS で書かれた big-step のもの
 が提示されてきたが、この意味論はすでに部分式に名前が与えられている
 （A-正規形になっている）ことを仮定している上に、毎回、捕捉する継続を
 計算しているなど実装には必ずしも合ったものとは言えなかった。
-ここで示した CPS インタプリタは単純で、ハンドラの意味を的確に捉えてい
-るのに加えて、deep ハンドラと shallow ハンドラの違いも簡潔に表現できて
+ここで示した CPS インタプリタは単純で、ハンドラの意味を的確に捉えて
+%いるのに加えて、deep ハンドラと shallow ハンドラの違いも簡潔に表現できて
 おり、algebraic effects の定義を与えるインタプリタ (definitional
 intepreter) と捉えて良いのではないかと考えている。
 
