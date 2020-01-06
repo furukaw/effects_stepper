@@ -18,7 +18,7 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> apply_out k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in
-.    eval e1 (FApp1 (v2, k)) k2
+    eval e1 (FApp1 (v2, k)) k2
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
      | Fun (x, e) ->
