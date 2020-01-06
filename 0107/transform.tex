@@ -295,26 +295,78 @@ type v = Var of string
 
 関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
 
-図\ref{figure:5memo}で\texttt{memo}の引数に渡している \texttt{redex} および \texttt{reduct} は、以下に示すこの言語の small-step の実行規則の簡約前後の式に対応する。
+\begin{figure}
+  % code/6cps/syntax.ml より
+\begin{verbatim}
+(* 値 *)
+type v = ...
+       | Cont of string * (c * c2) * ((c * k) -> k) (* 継続 *)
+(* handle 内の実行結果 *)
+and a = Return of v                          (* 値になった *)
+      | OpCall of string * v * (c * c2) * k  (* オペレーションが呼び出された *)
+(* handle 内のメタ継続 *)
+and k = v -> c2 -> a
+(* handle 内のコンテキスト *)
+and c = FId                (* [.] *)
+      | FApp2 of e * c     (* [e [.]] *)
+      | FApp1 of v * c     (* [[.] v] *)
+      | FOp of string * c  (* [op [.]] *)
+(* 全体のコンテキスト *)
+and c2 = GId                    (* [.] *)
+       | GHandle of h * c * c2  (* [[with h handle [.]]] *)
+\end{verbatim}
+\caption{継続の情報を保持する CPS インタプリタのための型}
+\label{figure:k_6cps}
+\end{figure}
 
-\[
-\begin{array}{c}
-  (\texttt{h} = \texttt{handler \{return x -> e0, op1(x; k) -> e1, ..., opn(x; k) -> en\}}) \\
-  \ \\
-  \infer[(\textsf{AppFun})]
-        {\Eval{(fun x -> e) v}{e[v/x]}}
-        {}
-        \qquad
-        \infer[(\textsf{AppCont})]
-              {\Eval{(fun x => F[x]) v}{F[v]}}
-              {}  \\
-              \ \\
-              \infer[(\textsf{Return})]
-                    {\Eval{with h handle v}{e0[v/x]}}
-                    {}
-                    \qquad
-                    \infer[(\textsf{?})]
-                          {\Eval{with h handle e}{e0[v/x]}}
-                          {？} \\
-\end{array}
-\]
+\begin{figure}
+  % code/6cps/eval.ml より
+  % 2マスずつインデントした
+\begin{verbatim}
+(* CPS ステッパ *)
+let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
+  | Val (v) -> k v c2
+  | App (e1, e2) -> eval e2 (FApp2 (e1, c), (fun v2 c2 ->
+    eval e1 (FApp1 (v2, c), (fun v1 c2 -> match v1 with
+      | Fun (x, e) ->
+        let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
+        let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
+        memo redex reduct (c, c2); eval reduct (c, k) c2
+      | Cont (x, (c', c2'), cont_value) ->
+        let redex = App (Val v1, Val v2) in  (* (fun x => c2[c[x]]) v2 *)
+        let reduct = plug_all (Val v2) (c', c2') in  (* c2[c[v2]] *)
+        memo redex reduct (c, c2); (cont_value (c, k)) v2 c2
+      | _ -> failwith "type error")) c2)) c2
+  | Op (name, e) -> eval e (FOp (name, c), (fun v c2 ->
+    OpCall (name, v, (c, GId), (fun v c2' -> k v c2')))) c2
+  | With (h, e) ->
+    let a = eval e (FId, (fun v c2 -> Return v)) (GHandle (h, c, c2)) in
+    apply_handler (c, k) h a c2
+
+(* handle 節内の実行結果をハンドラで処理する関数 *)
+and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
+  | Return v -> (match h with {return = (x, e)} ->
+     let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
+     let reduct = subst e [(x, v)] in  (* e[v/x] *)
+     memo redex reduct (c, c2); eval reduct (c, k) c2)
+  | OpCall (name, v, (c', c2'), k') ->
+    (match search_op name h with
+      | None -> OpCall (name, v, (c', compose_c2 c2' h (c, GId)),
+        (fun v' c2'' -> let a' = k' v' (GHandle (h, c, c2'')) in
+          apply_handler (c, k) h a' c2''))
+      | Some (x, y, e) ->
+        (* with handler {name(x; y) -> e} handle c2'[c'[name v]] *)
+        let redex = With (h, plug_all (Op (name, Val v)) (c', c2')) in
+        let cont_value = Cont (gen_var_name (),
+          (c', compose_c2 c2' h (FId, GId)), (fun (c'', k'') v' c2'' ->
+            let a' = k' v' (GHandle (h, c'', c2'')) in
+            apply_handler (c'', k'') h a' c2)) in
+       (* e[v/x, (fun n => with h handle c2'[c'[y]])/y *)
+       let reduct = subst e [(x, v); (y, cont_value)] in
+       memo redex reduct (c, c2); eval reduct (c, k) c2)
+
+let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
+\end{verbatim}
+\caption{変換の結果得られたステッパ}
+\label{figure:6cps}
+\end{figure}

@@ -1,7 +1,7 @@
 (* 値 *)
 type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
-       | Cont of string * (c * c2) * ((c * k) -> k) (* 継続 fun x => ... *)
+       | Cont of string * (c * c2) * ((c * k) -> k) (* 継続 *)
 (* ハンドラ *)
 and h = {
   return : string * e;                       (* handler {return x -> e,      *)
@@ -12,21 +12,20 @@ and e = Val of v          (* v *)
       | App of e * e      (* e e *)
       | Op of string * e  (* op e *)
       | With of h * e     (* with h handle e *)
-
-and k = v -> c2 -> a
-
-(* handle 内の継続 *)
-and c = FId
-      | FApp2 of e * c
-      | FApp1 of v * c
-      | FOp of string * c
-
-and c2 = GId
-       | GHandle of h * c * c2
-
 (* handle 内の実行結果 *)
-and a = Return of v               (* 値になった *)
+and a = Return of v                          (* 値になった *)
       | OpCall of string * v * (c * c2) * k  (* オペレーションが呼び出された *)
+(* handle 内のメタ継続 *)
+and k = v -> c2 -> a
+(* handle 内のコンテキスト *)
+and c = FId                (* [.] *)
+      | FApp2 of e * c     (* [e [.]] *)
+      | FApp1 of v * c     (* [[.] v] *)
+      | FOp of string * c  (* [op [.]] *)
+(* 全体のコンテキスト *)
+and c2 = GId                    (* [.] *)
+       | GHandle of h * c * c2  (* [[with h handle [.]]] *)
+
 
 type cont = c * c2
 

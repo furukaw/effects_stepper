@@ -9,7 +9,7 @@ let go () =
     print_newline ();
   end;
   Util.record_var_name program;
-  let result = Eval.interpreter program in
+  let result = Eval.stepper program in
   match result with
   | Syntax.Return v ->
     print_string "Result:  ";
