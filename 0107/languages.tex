@@ -3,22 +3,54 @@
 
 \ref{section:definition} 節で示した algebraic effects を含む言語の CPS インタプリタをステッパにするには、非関数化、CPS変換、非関数化が必要だったが、他のいくつかの言語についても同様にインタプリタを変換することでステッパを導出することを試みた。それぞれの言語のステッパ導出について説明する。
 
-\subsection{Multicore OCaml}
-\label{subsection:multicore_ocaml}
-
-Multicore OCaml は、OCaml の構文に algebraic effects を追加した構文を持つ。\ref{section:transform} 節で得られたステッパをもとにして、Multicore OCaml の algebraic effects を含む一部の構文を対象にしたステッパを実装した。\ref{section:definition} 節で定義した言語では \texttt{with handler \{return x -> er, op1(x; k) -> e1, ..., opn(x; k) -> en\} handle e} という構文でオペレーションを定義していたのに対し、Multicore OCaml では \texttt{try e with effect (op1 x) k -> e1 | ... | effect (opn x) k -> en} となる。この \texttt{with} 以下のパターンの中には例外のパターンも含めることができる。また、オペレーション呼び出しは \texttt{perform (opi e)} で行い、継続 \texttt{k} に値 \texttt{v} を渡して実行を再開するには \texttt{continue k v} と書く。このような構文の違いはあるものの、簡約のされかたは \ref{section:definition} 節で定めた言語のインタプリタと同様なので、インタプリタ関数を用意できれば変換によってステッパが導出できる。
-
-\subsection{shift/reset}
-\label{subsection:shift/reset}
-
-shift/reset は algebraic effects と同様に限定継続を変数に束縛して利用することができる機能である。\ref{section:transform} 節で行ったのと全く同様に、CPS インタプリタを非関数化、CPS変換、非関数化して出力関数を挿入したらステッパが得られた。
-
-\subsection{try-with}
-\label{subsection:try_with}
-
-try-with は、algebraic effects や shift/reset が限定継続を変数に束縛するのと違って、例外が起こされたときに限定継続を捨てるという機能である。よって継続を表す値は現れないので、インタプリタを CPS で書く必要は無い。Direct style でインタプリタを書いた場合、最初にCPS変換をすることで、CPSインタプリタと同様の変換によってステッパが導出できた。最初からCPSインタプリタを書いていれば \ref{section:transform}節と同様の手順になる。
 
 \subsection{型無し$\lambda$計算}
 \label{subsection:lambda}
 
 型無し$\lambda$計算の DS インタプリタは、CPS変換して非関数化したら全てのコンテキストを引数に保持するインタプリタになり、出力関数を入れるのみでステッパを作ることができた。これは、継続を区切って一部を捨てたり束縛したりするという操作が無いためだと考えられる。
+
+
+\subsection{try-with}
+\label{subsection:try_with}
+
+try-with は、algebraic effects が限定継続を変数に束縛するのと違って、例外が起こされたときに限定継続を捨てるという機能である。よって継続を表す値は現れないので、インタプリタを CPS で書く必要は無い。Direct style でインタプリタを書いた場合、最初にCPS変換をすることで、CPSインタプリタと同様の変換によってステッパが導出できた。最初からCPSインタプリタを書いていれば \ref{section:transform}節と同様の手順になる。
+
+
+\subsection{shift/reset}
+\label{subsection:shift/reset}
+
+shift/reset は algebraic effects と同様に限定継続を変数に束縛して利用することができる機能である。\ref{section:transform} 節で行ったのと全く同様に、CPS インタプリタを非関数化、CPS変換、非関数化したらコンテキストが表れ、ステッパが得られた。
+
+
+\subsection{Multicore OCaml}
+\label{subsection:multicore_ocaml}
+
+Multicore OCaml は、OCaml の構文に algebraic effects を追加した構文を持つ。我々は \ref{section:transform} 節で得られたステッパをもとにして、Multicore OCaml の algebraic effects を含む一部の構文を対象にしたステッパの実装を目指している。以下に Multicore OCaml の algebraic effects を含むプログラムのステップ表示の例を示す。
+
+\begin{verbatim}
+Input :  (try ((perform (E 1)) + (2 + (perform (E 4))))
+          with | effect (E n) k -> (continue k n))
+Step 1:  (continue (fun x => (try ((perform (E 1)) + (2 + x))
+                              with | effect (E n) k -> (continue k n))) 4)
+Step 2:  (try ((perform (E 1)) + (2 + 4))
+          with | effect (E n) k -> (continue k n))
+Step 3:  (try ((perform (E 1)) + 6)
+          with | effect (E n) k -> (continue k n))
+Step 4:  (continue (fun y => (try (y + 6)
+                              with | effect (E n) k -> (continue k n))) 1)
+Step 5:  (try (1 + 6) with | effect (E n) k -> (continue k n))
+Step 6:  (try 7 with | effect (E n) k -> (continue k n))
+Step 7:  7
+\end{verbatim}
+
+Multicore OCaml の「エフェクト」は \ref{section:definition} 節で定義した言語の algebraic effects のオペレーションとほとんど同じものだが、以下のような違いがある。
+
+\begin{itemize}
+\item (ハンドルの構文) \texttt{with handler \{return x -> er, op1(x; k) -> e1, ...\} handle e} は、Multicore OCaml では \texttt{match e with x -> er | effect (Op1 x) k -> e1 | ... } と書ける。
+\item (宣言) \texttt{effect E : t1 -> t2} と書くことで、\texttt{t1} 型の引数をとって \texttt{t2} 型を返すエフェクト \texttt{E} が宣言できる。宣言していないエフェクトは使用できない。
+\item (実行) エフェクトを呼び出す際には、 \texttt{perform (E e)} というように関数 \texttt{perform} に渡す。
+\item (継続の適用) 継続 \texttt{k} に式 \texttt{e} を渡して実行を再開するには \texttt{continue k v} と書く。
+\item (継続の適用の制限) 同じ継続は1度しか適用できない。
+\end{itemize}
+
+このような構文の違いはあるものの、継続が one-shot であることを除いて簡約のされかたは \ref{section:definition} 節で定めた言語のインタプリタと同様なので、インタプリタ関数を用意できれば変換によってステッパが導出できると考えられる。
