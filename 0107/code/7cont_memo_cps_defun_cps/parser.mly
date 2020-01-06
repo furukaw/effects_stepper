@@ -44,6 +44,8 @@ expr:
         { Op ($1, $2) }
 | WITH HANDLER LBRACE handler RBRACE HANDLE expr
         { With ($4, $7) }
+| WITH LPAREN HANDLER LBRACE handler RBRACE RPAREN HANDLE expr
+        { With ($5, $9) }
 
 value:
 | simple_value

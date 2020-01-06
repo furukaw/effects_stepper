@@ -1,7 +1,7 @@
 (* 値の型 *)
 type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
-       | Cont of string * (k -> k)
+       | Cont of string * (k * c2) * ((k * (c2 * k2)) -> (k * (c2 * k2)))
 
 and h = {
   return : string * e;              (* handler {return x -> e,      *)
@@ -15,17 +15,17 @@ and e = Val of v          (* v *)
       | With of h * e     (* with e handle e *)
 
 and a = Return of v
-      | OpCall of string * v * k
+      | OpCall of string * v * (k * (c2 * k2))
 
 and k = FId
       | FApp2 of e * k
       | FApp1 of v * k
       | FOp of string * k
-      | FCall of k * h * k
+
 and k2 = a -> a
 
-type c2 = GId
-        | GHandle of k * h * c2
+and c2 = GId
+       | GHandle of h * k * c2
 
 type cont = k * c2
 
@@ -36,24 +36,22 @@ let rec plug_in_handle (e : e) (k : k) : e = match k with
   | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
   | FApp1 (v2, k) -> plug_in_handle (App (e, Val v2)) k
   | FOp (name, k) -> plug_in_handle (Op (name, e)) k
-  | FCall (k1, h, k2) ->
-    plug_in_handle (With (h, plug_in_handle e k2)) k1
-
-let rec plug_all (e : e) ((k, c2) : cont) : e =
+ 
+let rec plug_all (e : e) ((k, k2) : cont) : e =
   let e_in_handle = plug_in_handle e k in
-  match c2 with
+  match k2 with
   | GId -> e_in_handle
-  | GHandle (k, h, c2) ->
+  | GHandle (h, k, k2) ->
     let e_handle = With (h, e_in_handle) in
-    plug_all e_handle (k, c2)
+    plug_all e_handle (k, k2)
 
 (* 値を文字列にする関数 *)
 let rec v_to_string (v : v) : string = match v with
   | Var (x) -> x
   | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ e_to_string e ^ ")"
-  | Cont (x, k) ->
+  | Cont (x, ctxt, cont_value) ->
     "(fun " ^ x ^ " => " ^
-    e_to_string (plug_in_handle (Val (Var x)) (k FId)) ^ ")"
+    e_to_string (plug_all (Val (Var x)) ctxt) ^ ")"
 
 and h_to_string : h -> string = fun {return; ops} ->
   let return_strs = match return with (x, e) ->

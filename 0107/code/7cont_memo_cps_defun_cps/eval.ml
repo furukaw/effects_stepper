@@ -2,56 +2,78 @@ open Syntax
 open Util
 open Memo
 
-(* CPS インタプリタを非関数化して CPS 変換した関数 *)
-let rec eval (exp : e) (k : k) ((k2, c2) : k2 * c2) : a = match exp with
-  | Val (v) -> apply_in k v (k2, c2)
-  | App (e1, e2) -> eval e2 (FApp2 (e1, k)) (k2, c2)
-  | Op (name, e) -> eval e (FOp (name, k)) (k2, c2)
-  | With (h, e) ->
-    eval e FId ((fun a -> apply_handler k h a k2 c2), (GHandle (k, h, c2)))
+let rec compose_c2 (c2_in : c2) (h : h) ((k_out, c2_out) : k * c2) : c2 =
+  match c2_in with
+  | GId -> GHandle (h, k_out, c2_out)
+  | GHandle (h', k', c2') -> GHandle (h', k', compose_c2 c2' h (k_out, c2_out))
+
+let rec compose_k2 (k2_in : k2) (h : h) ((k_out, (c2_out, k2_out)) : k * (c2 * k2)) : k2 =
+  fun a ->
+    let a' = k2_in a in
+    apply_handler k_out h a' (c2_out, k2_out)
+
+(* ステッパ関数 *)
+and eval (exp : e) (k : k) ((c2, k2) : c2 * k2) : a = match exp with
+  | Val (v) -> apply_in k v (c2, k2)
+  | App (e1, e2) -> eval e2 (FApp2 (e1, k)) (c2, k2)
+  | Op (name, e) -> eval e (FOp (name, k)) (c2, k2)
+  | With (h, e) -> eval e FId ((GHandle (h, k, c2)),
+                               (fun a -> apply_handler k h a (c2, k2)))
 
 (* handle 節内の継続を適用する関数 *)
-and apply_in (k : k) (v : v) ((k2, c2) : k2 * c2) : a = match k with
-  | FId -> k2 (Return v)  (* handle 節の外の継続を適用 *)
+and apply_in (k : k) (v : v) ((c2, k2) : c2 * k2) : a = match k with
+  | FId -> k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in
-    eval e1 (FApp1 (v2, k)) (k2, c2)
+    eval e1 (FApp1 (v2, k)) (c2, k2)
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
      | Fun (x, e) ->
        let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
        let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
        memo redex reduct (k, c2);
-       eval reduct k (k2, c2)
-     | Cont (x, k') ->
+       eval reduct k (c2, k2)
+     | Cont (x, (k', c2'), cont_value) ->
        let redex = App (Val v1, Val v2) in               (* k' v2 *)
-       let reduct = plug_in_handle (Val v2) (k' FId) in  (* k'[v2] *)
+       let reduct = plug_all (Val v2) (k', c2') in  (* k'[v2] *)
        memo redex reduct (k, c2);
-       apply_in (k' k) v2 (k2, c2)
+       let (new_k, (new_c2, new_k2)) = cont_value (k, (c2, k2)) in
+       apply_in new_k v2 (new_c2, new_k2)
      | _ -> failwith "type error")
-  | FOp (name, k) -> k2 (OpCall (name, v, k))
-  | FCall (k'', h, k') ->
-    apply_in k' v ((fun a -> apply_handler k'' h a k2 c2), (GHandle (k'', h, c2)))
+  | FOp (name, k) -> k2 (OpCall (name, v, (k, (GId, (fun a -> a)))))
+
+(* 全体の継続を適用する関数 *)
+(* and apply_out ((c2, k2) : c2 * k2) (a : a) : a = match k2 with
+ *   | GId -> a
+ *   | GHandle (h, k, k2) ->
+ *     apply_handler k h a k2 *)
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) (k2 : k2) (c2 : c2) : a = match a with
+and apply_handler (k : k) (h : h) (a : a) ((c2, k2) : c2 * k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
        let redex = With (h, Val v) in (* with handler{return x -> e} handle v *)
        let reduct = subst e [(x, v)] in  (* e[v/x] *)
        memo redex reduct (k, c2);
-       eval reduct k (k2, c2))
-  | OpCall (name, v, k') ->
+       eval reduct k (c2, k2))
+  | OpCall (name, v, (k', (c2', k2'))) ->
     (match search_op name h with
      | None ->
-       k2 (OpCall (name, v, FCall (k, h, k'))) (* 外の継続を適用 *)
+       k2 (OpCall (name, v, (k', (compose_c2 c2' h (k, GId),
+                                  compose_k2 k2' h (k, (c2, fun a -> a))))))
      | Some (x, y, e) ->
        let redex = (* with handler {name(x; y) -> e} handle k'[(name v)] *)
-         With (h, plug_in_handle (Op (name, Val v)) k') in
+         With (h, plug_all (Op (name, Val v)) (k', c2')) in
        let new_var = gen_var_name () in
-       let cont_value = Cont (new_var, fun k -> FCall (k, h, k')) in
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       memo redex reduct(k, c2);
-       eval reduct k (k2, c2))
+       let cont_value =
+         Cont (new_var,
+               (k', compose_c2 c2' h (FId, GId)),
+               (fun (k'', (c2'', k2'')) ->
+                  (k', (compose_c2 c2' h (k'', c2''),
+                        compose_k2 k2' h (k'', (c2'', k2'')))))) in
+       let reduct = (* e[v/x, k[with h handle k']/y] *)
+         subst e [(x, v); (y, cont_value)] in
+       memo redex reduct (k, c2);
+       eval reduct k (c2, k2))
 
 (* 初期継続を渡して実行を始める *)
-let stepper (e : e) : a = eval e FId ((fun a -> a), GId)
+let stepper (e : e) : a = eval e FId (GId, (fun a -> a))

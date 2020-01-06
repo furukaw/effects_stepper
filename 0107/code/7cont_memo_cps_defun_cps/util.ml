@@ -10,7 +10,17 @@ let search_op (op : string) ({ops} : h) : (string * string * e) option =
 let rec subst_v (v : v) (pairs : (string * v) list) : v = match v with
   | Var (x) -> (try List.assoc x pairs with Not_found -> v)
   | Fun (x, e) -> if List.mem_assoc x pairs then v else Fun (x, subst e pairs)
-  | Cont (x, k) -> v
+  | Cont (x, ctxt_value, cont_value) -> v
+
+and subst_c2 (c2 : c2) (pairs : (string * v) list) : c2 = match c2 with
+  | GId -> GId
+  | GHandle (h, k, c2) -> GHandle (subst_h h pairs, subst_c k pairs, subst_c2 c2 pairs)
+
+and subst_c (c : k) (pairs : (string * v) list) : k = match c with
+  | FId -> FId
+  | FApp2 (e1, c) -> FApp2 (e1, subst_c c pairs)
+  | FApp1 (v2, c) -> FApp1 (v2, subst_c c pairs)
+  | FOp (name, c) -> FOp (name, subst_c c pairs)
 
 and subst_h ({return; ops} : h) (pairs : (string * v) list) : h =
   let new_return = match return with (x, e) ->
@@ -58,7 +68,7 @@ let rec record_var_name : e -> unit = function
 and record_var_name_value : v -> unit = function
   | Var (x) -> ()
   | Fun (x, e) -> add_var_name x; record_var_name e
-  | Cont (x, k) -> ()
+  | Cont (x, _, _) -> ()
 
 and record_var_name_handler : h -> unit = fun {return; ops} ->
   begin
