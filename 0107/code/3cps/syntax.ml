@@ -13,12 +13,12 @@ and e = Val of v          (* v *)
       | Op of string * e  (* op e *)
       | With of h * e     (* with h handle e *)
 
-(* handle 内の継続 *)
-and k = FId
-      | FApp2 of e * k
-      | FApp1 of v * k
-      | FOp of string * k
-
+(* handle 内の限定継続 *)
+and k = FId                (* [.] *)
+      | FApp2 of e * k     (* [e [.]] *)
+      | FApp1 of v * k     (* [[.] v] *)
+      | FOp of string * k  (* [op [.]] *)
+(* 継続 *)
 and k2 = a -> a
 
 (* handle 内の実行結果 *)

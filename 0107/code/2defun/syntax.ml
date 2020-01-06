@@ -14,10 +14,10 @@ and e = Val of v          (* v *)
       | With of h * e     (* with h handle e *)
 
 (* handle 内の継続 *)
-and k = FId
-      | FApp2 of e * k
-      | FApp1 of v * k
-      | FOp of string * k
+and k = FId                 (* [.] *)
+      | FApp2 of e * k      (* [e [.]] *)
+      | FApp1 of v * k      (* [[.] v] *)
+      | FOp of string * k   (* [op [.]] *)
 
 (* handle 内の実行結果 *)
 and a = Return of v               (* 値になった *)
