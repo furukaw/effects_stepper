@@ -7,20 +7,6 @@ let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
   | GId -> GHandle (h, k_out, k2_out)
   | GHandle (h', k', k2') -> GHandle (h', k', compose_k2 k2' h (k_out, k2_out))
 
-let rec compose_k (inner : k) (outer : k) : k = match inner with
-  | FId -> outer
-  | FApp2 (e1, k) -> FApp2 (e1, compose_k k outer)
-  | FApp1 (v2, k) -> FApp1 (v2, compose_k k outer)
-  | FOp (name, k) -> FOp (name, compose_k k outer)
-
-let rec compose_cont ((k_in, k2_in) : k * k2) ((k_out, k2_out) : k * k2) : (k * k2) =
-  match k2_in with
-  | GId ->
-    (compose_k k_in k_out, k2_out)
-  | GHandle (h', k', k2') ->
-    let (k'', k2'') = compose_cont (k', k2') (k_out, k2_out) in
-    (k_in, GHandle (h', k'', k2''))
-
 (* ステッパ関数 *)
 let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | Val (v) -> apply_in k v k2
@@ -42,9 +28,9 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
        eval reduct k k2
      | Cont (x, cont_value) ->
        let redex = App (Val v1, Val v2) in               (* k' v2 *)
-       let reduct = plug_all (Val v2) (cont_value FId) in  (* k'[v2] *)
+       let reduct = plug_all (Val v2) (cont_value (FId, GId)) in  (* k'[v2] *)
        memo redex reduct (k, k2);
-       let (new_k, new_k2) = compose_cont (cont_value FId) (k, k2) in
+       let (new_k, new_k2) = cont_value (k, k2) in
        apply_in new_k v2 new_k2
      | _ -> failwith "type error")
   | FOp (name, k) -> apply_out k2 (OpCall (name, v, (k, GId)))
@@ -72,7 +58,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
          With (h, plug_all (Op (name, Val v)) (k', k2')) in
        let new_var = gen_var_name () in
        let cont_value =
-         Cont (new_var, fun k'' -> (k', compose_k2 k2' h (k'', GId))) in
+         Cont (new_var, fun (k'', k2'') -> (k', compose_k2 k2' h (k'', k2''))) in
        let reduct = (* e[v/x, k[with h handle k']/y] *)
          subst e [(x, v); (y, cont_value)] in
        memo redex reduct (k, k2);
