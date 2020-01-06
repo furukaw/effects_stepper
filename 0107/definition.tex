@@ -103,16 +103,15 @@ h  :=                                      (ハンドラ)
 \label{subsection:1cps}
 
 \begin{figure}
+  % code/1cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
 type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
        | Cont of (k -> k)   (* 継続 fun x => ... *)
 (* ハンドラ *)
-and h = {
-  return : string * e;              (* {return x -> e;      *)
-  ops : (string * string * e) list  (*  op(x; k) -> e; ...} *)
-}
+and h = {return : string * e;                 (* handler {return x -> e;      *)
+          ops : (string * string * string * e) list}  (*  op(x; k) -> e; ...} *)
 (* 式 *)
 and e = Val of v          (* v *)
       | App of e * e      (* e e *)
@@ -158,44 +157,46 @@ and a = Return of v               (* 値になった *)
 %図 \ref{figure:syntax} の言語に対する、call-by-value かつ right-to-left のインタプリタを図 \ref{figure:1cps} に定義する。ただし、関数 \texttt{subst :\ e -> (string * v) list -> e} は代入のための関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e} の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v} と値 \texttt{cont\_value} を代入した式を返す。関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数で、例えば \texttt{handler \{return x -> x, op1(y, k) -> k y\}} を表すデータを \texttt{h} とすると \texttt{search\_op "op2" h} は \texttt{None} を返し \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var "y"))} を返す。
 
 \begin{figure}
+  % code/1cps/eval.ml より
+  % 2マスずつインデントするように書き換えた
 \begin{verbatim}
 (* CPS インタプリタ *)
 let rec eval (exp : e) (k : k) : a = match exp with
   | Val (v) -> k v  (* 継続に値を渡す *)
   | App (e1, e2) ->
     eval e2 (fun v2 ->  (* FApp2 に変換される関数 *)
-        eval e1 (fun v1 -> match v1 with  (* FApp1 に変換される関数 *)
-            | Fun (x, e) ->
-              let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
-              eval reduct k
-            | Cont (cont_value) -> (cont_value k) v2
-              (* 現在の継続と継続値が保持するメタ継続を合成して値を渡す *)
-            | _ -> failwith "type error"))
+      eval e1 (fun v1 -> match v1 with  (* FApp1 に変換される関数 *)
+        | Fun (x, e) ->
+          let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
+          eval reduct k
+        | Cont (cont_value) -> (cont_value k) v2
+          (* 現在の継続と継続値が保持するメタ継続を合成して値を渡す *)
+        | _ -> failwith "type error"))
   | Op (name, e) ->
-    eval e (fun v -> OpCall (name, v, k))  (* FOp に変換される関数 *)
+    eval e (fun v -> OpCall (name, v, fun v -> k v))  (* FOp に変換される関数 *)
   | With (h, e) ->
     let a = eval e (fun v -> Return v) in  (* FId に変換される関数、空の継続 *)
     apply_handler k h a  (* handle 節内の実行結果をハンドラで処理 *)
 
-(* handle 節内の実行結果をハンドラで処理する関数 *)
+(* handle 内の実行結果をハンドラで処理する関数 *)
 and apply_handler (k : k) (h : h) (a : a) : a = match a with
   | Return v ->                         (* handle 節内が値 v を返したとき *)
     (match h with {return = (x, e)} ->  (* handler {return x -> e, ...} として*)
-       let reduct = subst e [(x, v)] in (* e[v/x] に簡約される *)
-       eval reduct k)                   (* e[v/x] を実行 *)
+      let reduct = subst e [(x, v)] in (* e[v/x] に簡約される *)
+      eval reduct k)                   (* e[v/x] を実行 *)
   | OpCall (name, v, k') ->        (* オペレーション呼び出しがあったとき *)
     (match search_op name h with
-     | None ->                     (* ハンドラで定義されていない場合、 *)
-       OpCall (name, v, (fun v ->  (* FCall に変換される関数 *)
-           let a' = k' v in        (* OpCall の継続の後に現在の継続を合成 *)
-           apply_handler k h a'))
-     | Some (x, y, e) ->           (* ハンドラで定義されている場合、 *)
-       let cont_value =
-         Cont (fun k'' -> fun v -> (* 適用時にその後の継続を受け取って合成 *)
-             let a' = k' v in
-             apply_handler k'' h a') in  (* FCall に変換される関数 *)
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k)
+      | None ->                     (* ハンドラで定義されていない場合、 *)
+        OpCall (name, v, (fun v ->  (* OpCall の継続の後に現在の継続を合成 *)
+          let a' = k' v in
+          apply_handler k h a'))
+      | Some (x, y, e) ->           (* ハンドラで定義されている場合、 *)
+        let cont_value =
+          Cont (fun k'' -> fun v -> (* 適用時にその後の継続を受け取って合成 *)
+            let a' = k' v in
+            apply_handler k'' h a') in
+        let reduct = subst e [(x, v); (y, cont_value)] in
+        eval reduct k)
 
 (* 初期継続を渡して実行を始める *)
 let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換される関数 *)
@@ -224,6 +225,13 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 初期継続 \texttt{(fun x -> Return x)} に結果が返り、それが
 \texttt{apply\_handler} に渡される。
 
+ここで、オペレーション呼び出しで返される \texttt{OpCall} の第 3 引数
+が \texttt{k} ではなく \texttt{fun v -> k v} のように $\eta$-expand さ
+れているのに注意しよう。このようにしているのは、\texttt{k} が「直近の
+ハンドラまでの継続」を表しているのに対し、\texttt{OpCall} の第 3 引数
+はより広い継続を指すことがあり両者を区別したいためである。これについて
+は、次節で非関数化を施す際に詳しく述べる。
+
 \texttt{apply\_handler} は、そのときの継続 \texttt{k}、
 処理すべきハンドラ \texttt{h}、そして
 \texttt{handle} 節内の実行結果 \texttt{a} を受け取って
@@ -240,6 +248,8 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, k')} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていなかった場合：
 さらに外側の \texttt{with handle} 文に処理を移すため、
 \texttt{handle} 節内の限定継続 \texttt{k'} に、1つ外側の \texttt{handle} までの限定継続を合成した継続 \texttt{fun v -> ...} を作り、それを \texttt{OpCall (name, v, (fun v -> ...))} と返す
+。この \texttt{OpCall} の第 3 引数は「直近のハンドラまでの継続」ではな
+く、より広い継続となっている。
 %\item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, k')} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていなかった場合：\texttt{handle} 節内の限定継続 \texttt{k'} に、1つ外側の \texttt{handle} までの限定継続を合成した継続 \texttt{fun v -> ...} を作り、それを \texttt{OpCall (name, v, (fun v -> ...))} と返す
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, k')} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていた場合：そのハンドラの定義 \texttt{name (x; y) -> e} を参照し、
 \texttt{e[v/x, cont\_value/y]} を実行する。

@@ -3,10 +3,8 @@ type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
        | Cont of (k -> k)   (* 継続 fun x => ... *)
 (* ハンドラ *)
-and h = {
-  return : string * e;                       (* handler {return x -> e,      *)
-  ops : (string * string * string * e) list  (*          op(x; k) -> e, ...} *)
-}
+and h = {return : string * e;                 (* handler {return x -> e,      *)
+          ops : (string * string * string * e) list}  (*  op(x; k) -> e, ...} *)
 (* 式 *)
 and e = Val of v          (* v *)
       | App of e * e      (* e e *)
