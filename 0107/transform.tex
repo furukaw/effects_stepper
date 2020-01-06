@@ -30,7 +30,7 @@
 %まず、図\ref{figure:1cps}のプログラムの \texttt{k} 型の$\lambda$式を非関数化する。非関数化は以下の手順によって行われる。
 \begin{enumerate}
 \item 継続を表す$\lambda$式をコンストラクタに置き換える。その際、$\lambda$式内の自由変数はコンストラクタの引数にする。
-その結果、得られるデータ構造は図 \ref{figure:k_2defun}のようになる。
+その結果、得られるデータ構造は図 \ref{figure:k_3cps}のようになる。
 図 \ref{figure:1cps}の中には、コメントとしてどの関数がどのコンストラク
 タに置き換わったのかが書かれている。
 \item 関数を表すコンストラクタと引数を受け取って中身を実行するような apply 関数を定義する。
@@ -41,65 +41,24 @@
 %図\ref{figure:1cps}のインタプリタの \texttt{k} 型すなわち \texttt{v -> a} 型の$\lambda$式を非関数化すると、型 \texttt{k} の定義は図 \ref{figure:k_2defun} のようにヴァリアント型になり、インタプリタは図\ref{figure:2defun}に書き換わる。
 
 \begin{figure}
+  % code/3cps/syntax.ml より
 \begin{verbatim}
-and k = FId                 (* [.] *)
-      | FApp2 of e * k      (* [e [.]] *)
-      | FApp1 of v * k      (* [[.] v] *)
-      | FOp of string * k   (* [op [.]] *)
-      | FCall of k * h * k  (* [with h handle [[.]]] *)
+(* 値 *)
+type v = ...
+       | Cont of (k -> v -> k2 -> a)  (* 継続 *)
+(* handle 内の実行結果 *)
+and a = Return of v                            (* 値になった *)
+      | OpCall of string * v * (v -> k2 -> a)  (* オペレーションが呼び出された *)
+(* handle 内の限定継続 *)
+and k = FId                (* [.] *)
+      | FApp2 of e * k     (* [e [.]] *)
+      | FApp1 of v * k     (* [[.] v] *)
+      | FOp of string * k  (* [op [.]] *)
+(* 全体のメタ継続 *)
+and k2 = a -> a
 \end{verbatim}
-\caption{非関数化後の継続の型}
-\label{figure:k_2defun}
-\end{figure}
-
-\begin{figure}
-\begin{verbatim}
-(* CPS インタプリタを非関数化した関数 *)
-let rec eval (exp : e) (k : k) : a = match exp with
-  | Val (v) -> apply_in k v  (* 継続適用関数に継続と値を渡す *)
-  | App (e1, e2) -> eval e2 (FApp2 (e1, k))
-  | Op (name, e) -> eval e (FOp (name, k))
-  | With (h, e) ->
-    let a = eval e FId in  (* 空の継続を渡す *)
-    apply_handler k h a  (* handle 節内の実行結果をハンドラで処理 *)
-
-(* handle 節内の継続を適用する関数 *)
-and apply_in (k : k) (v : v) : a = match k with
-  | FId -> Return v  (* 空の継続、そのまま値を返す *)
-  | FApp2 (e1, k) -> let v2 = v in
-    eval e1 (FApp1 (v2, k))
-  | FApp1 (v2, k) -> let v1 = v in
-    (match v1 with
-     | Fun (x, e) ->
-       let reduct = subst e [(x, v2)] in
-       eval reduct k
-     | Cont (k') ->
-       apply_in (k' k) v2
-     | _ -> failwith "type error")
-  | FOp (name, k) -> OpCall (name, v, k)  (* この handle 節の実行結果は OpCall *)
-  | FCall (k'', h, k') ->  (* k''[with h handle k'[v]] *)
-    let a = apply_in k' v in  (* handle 節までの継続を適用 *)
-    apply_handler k'' h a  (* a をハンドラ h で処理して、その後 k'' を適用 *)
-
-(* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) : a = match a with
-  | Return v ->
-    (match h with {return = (x, e)} ->
-       let reduct = subst e [(x, v)] in
-       eval reduct k)
-  | OpCall (name, v, k') ->
-    (match search_op name h with
-     | None -> OpCall (name, v, FCall (k, h, k'))
-     | Some (x, y, e) ->
-       let cont_value = Cont (fun k -> FCall (k, h, k')) in
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k)
-
-(* 初期継続を渡して実行を始める *)
-let stepper (e : e) : a = eval e FId
-\end{verbatim}
-\caption{CPS インタプリタを非関数化したプログラム}
-\label{figure:2defun}
+\caption{非関数化とCPS変換をした後の継続の型}
+\label{figure:k_3cps}
 \end{figure}
 
 非関数化したインタプリタを見るといくつかのことがわかる。
@@ -148,6 +107,7 @@ let stepper (e : e) : a = eval e FId
 り、コンテキスト情報はふたつの継続ですべて表現される。
 
 \begin{figure}
+  % code/3cps/eval.ml より
 \begin{verbatim}
 (* CPS インタプリタを非関数化して CPS 変換した関数 *)
 let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
@@ -155,24 +115,22 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
   | Op (name, e) -> eval e (FOp (name, k)) k2
   | With (h, e) ->
-    eval e FId (fun a -> apply_handler k h a k2) (* GHandle に変換される関数 *)
+    eval e FId (fun a -> apply_handler k h a k2)  (* GHandle に変換される *)
 
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> k2 (Return v)  (* handle 節の外の継続を適用 *)
-  | FApp2 (e1, k) -> let v2 = v in
-    eval e1 (FApp1 (v2, k)) k2
+  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
      | Fun (x, e) ->
        let reduct = subst e [(x, v2)] in
        eval reduct k k2
-     | Cont (k') ->
-       apply_in (k' k) v2 k2
+     | Cont (cont_value) ->
+       (cont_value k) v2 k2
      | _ -> failwith "type error")
-  | FOp (name, k) -> k2 (OpCall (name, v, k))
-  | FCall (k'', h, k') ->
-    apply_in k' v (fun a -> apply_handler k'' h a k2) (* GHandle に変換される関数 *)
+  | FOp (name, k) ->
+    k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
@@ -180,17 +138,20 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
     (match h with {return = (x, e)} ->
        let reduct = subst e [(x, v)] in
        eval reduct k k2)
-  | OpCall (name, v, k') ->
+  | OpCall (name, v, va) ->
     (match search_op name h with
      | None ->
-       k2 (OpCall (name, v, FCall (k, h, k'))) (* 外の継続を適用 *)
+       k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 外の継続を適用 *)
+           va v (fun a' -> apply_handler k h a' k2'))))  (* GHandle に変換 *)
      | Some (x, y, e) ->
-       let cont_value = Cont (fun k -> FCall (k, h, k')) in
+       let cont_value =
+         Cont (fun k'' -> fun v -> fun k2 ->
+             va v (fun a' -> apply_handler k'' h a' k2)) in  (* GHandle に変換 *)
        let reduct = subst e [(x, v); (y, cont_value)] in
        eval reduct k k2)
 
 (* 初期継続を渡して実行を始める *)
-let stepper (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される関数 *)
+let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される *)
 \end{verbatim}
 \caption{CPS インタプリタを非関数化して CPS 変換したプログラム}
 \label{figure:3cps}

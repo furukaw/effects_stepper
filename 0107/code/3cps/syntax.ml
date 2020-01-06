@@ -22,7 +22,7 @@ and k = FId                (* [.] *)
 and k2 = a -> a
 
 (* handle 内の実行結果 *)
-and a = Return of v               (* 値になった *)
+and a = Return of v                            (* 値になった *)
       | OpCall of string * v * (v -> k2 -> a)  (* オペレーションが呼び出された *)
 
 (* 値を文字列にする関数 *)
