@@ -370,3 +370,16 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 \caption{変換の結果得られたステッパ}
 \label{figure:6cps}
 \end{figure}
+
+\begin{figure}
+  % code/6cps/eval より
+\begin{verbatim}
+(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
+let rec compose_c2 (k2_in : c2) (h : h) ((k_out, k2_out) : c * c2) : c2 =
+  match k2_in with
+  | GId -> GHandle (h, k_out, k2_out)
+  | GHandle (h', k', k2') -> GHandle (h', k', compose_c2 k2' h (k_out, k2_out))
+\end{verbatim}
+\caption{コンテキストを外側に拡張する関数}
+\label{figure:compose}
+\end{figure}
