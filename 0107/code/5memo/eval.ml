@@ -2,6 +2,7 @@ open Syntax
 open Util
 open Memo
 
+(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
 let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
   match k2_in with
   | GId -> GHandle (h, k_out, k2_out)

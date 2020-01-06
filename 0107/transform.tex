@@ -232,6 +232,19 @@ let interpreter (e : e) : a = eval e FId GId
 \ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が副作用を足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
 
 \begin{figure}
+  % code/5memo/eval.ml より
+\begin{verbatim}
+(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
+let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
+  match k2_in with
+  | GId -> GHandle (h, k_out, k2_out)
+  | GHandle (h', k', k2') -> GHandle (h', k', compose_k2 k2' h (k_out, k2_out))
+\end{verbatim}
+\caption{継続を外側に拡張する関数}
+\label{figure:compose}
+\end{figure}
+
+\begin{figure}
 \begin{verbatim}
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
@@ -245,35 +258,39 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
        let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
        memo redex reduct (k, k2);
        eval reduct k k2
-     | Cont (x, k') ->
-       let redex = App (Val v1, Val v2) in               (* k' v2 *)
-       let reduct = plug_in_handle (Val v2) (k' FId) in  (* k'[v2] *)
+     | Cont (x, (k', k2'), cont_value) ->
+       let redex = App (Val v1, Val v2) in  (* (fun x => F[x]) v2 *)
+       let reduct = plug_all (Val v2) (k', k2') in
        memo redex reduct (k, k2);
-       apply_in (k' k) v2 k2
+       (cont_value k) v2 k2
      | _ -> failwith "type error")
-  | FOp (name, k) -> apply_out k2 (OpCall (name, v, k))
-  | FCall (k_last, h, k') ->
-    apply_in k' v (GHandle (k_last, h, k2))
+  | FOp (name, k) ->
+    apply_out k2 (OpCall (name, v, (k, GId),
+                          (fun v -> fun k2' -> apply_in k v k2')))
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-       let redex = With (h, Val v) in (* with handler{return x -> e} handle v *)
-       let reduct = (subst e [(x, v)]) in  (* e[v/x] *)
+       let redex = With (h, Val v) in
+       let reduct = subst e [(x, v)] in
        memo redex reduct (k, k2);
        eval reduct k k2)
-  | OpCall (name, v, k') ->
+  | OpCall (name, v, (k', k2'), vk2a) ->
     (match search_op name h with
-     | None -> apply_out k2 (OpCall (name, v, FCall (k, h, k')))
+     | None ->
+       apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
+                             (fun v -> fun k2' ->
+                                vk2a v (GHandle (h, k, k2')))))
      | Some (x, y, e) ->
-       let redex = (* with handler {name(x; y) -> e} handle k'[(name v)] *)
-         With (h, plug_in_handle (Op (name, Val v)) k') in
+       let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
        let new_var = gen_var_name () in
        let cont_value =
-         Cont (new_var, fun k -> FCall (k, h, k')) in
-       let reduct = (* e[v/x, k[with h handle k']/y] *)
-         subst e [(x, v); (y, cont_value)] in
+         Cont (new_var,
+               (k', compose_k2 k2' h (FId, GId)),
+               (fun k'' -> fun v -> fun k2 ->
+             vk2a v (GHandle (h, k'', k2)))) in
+       let reduct = subst e [(x, v); (y, cont_value)] in
        memo redex reduct (k, k2);
        eval reduct k k2)
 \end{verbatim}
@@ -295,6 +312,15 @@ type v = Var of string
 
 関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
 
+\subsection{逆変換（？）}
+
+図 \ref{figure:5memo} のプログラムに主に以下を施すと図 \ref{figure:6cps} になった。
+\begin{itemize}
+\item \texttt{k} 型のコンストラクタを \texttt{c} 型にして、\texttt{k} 型は \texttt{v -> c2 -> a} とする
+\item \texttt{k} 型だった引数を（多分もれなく）、対応するメタ継続関数とコンストラクタのペア(\texttt{c * k} 型) に置き換える。
+\item DS 変換
+\end{itemize}
+
 \begin{figure}
   % code/6cps/syntax.ml より
 \begin{verbatim}
@@ -315,7 +341,7 @@ and c = FId                (* [.] *)
 and c2 = GId                    (* [.] *)
        | GHandle of h * c * c2  (* [[with h handle [.]]] *)
 \end{verbatim}
-\caption{継続の情報を保持する CPS インタプリタのための型}
+\caption{継続の情報を保持するための言語やコンテキストの定義}
 \label{figure:k_6cps}
 \end{figure}
 
@@ -371,15 +397,3 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 \label{figure:6cps}
 \end{figure}
 
-\begin{figure}
-  % code/6cps/eval より
-\begin{verbatim}
-(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
-let rec compose_c2 (k2_in : c2) (h : h) ((k_out, k2_out) : c * c2) : c2 =
-  match k2_in with
-  | GId -> GHandle (h, k_out, k2_out)
-  | GHandle (h', k', k2') -> GHandle (h', k', compose_c2 k2' h (k_out, k2_out))
-\end{verbatim}
-\caption{コンテキストを外側に拡張する関数}
-\label{figure:compose}
-\end{figure}
