@@ -1,7 +1,7 @@
 (* 値の型 *)
 type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
-       | Cont of string * ((k * c) -> k) * c
+       | Cont of string * (k -> (k * k2))
 
 and h = {
   return : string * e;              (* handler {return x -> e,      *)
@@ -15,46 +15,41 @@ and e = Val of v          (* v *)
       | With of h * e     (* with e handle e *)
 
 and a = Return of v
-      | OpCall of string * v * (k * c)
+      | OpCall of string * v * (k * k2)
 
-and k = v -> a
+and k = FId
+      | FApp2 of e * k
+      | FApp1 of v * k
+      | FOp of string * k
 
-and c = FId
-      | FApp2 of e * c
-      | FApp1 of v * c
-      | FOp of string * c
-      | FCall of c * h * c
+and k2 = GId
+       | GHandle of h * k * k2
 
-type c2 = GId
-        | GHandle of c * h * c2
-
-type cont = c * c2
+type cont = k * k2
 
 let hole : e = Val (Var "8")
 
-let rec plug_in_handle (e : e) (k : c) : e = match k with
+let rec plug_in_handle (e : e) (k : k) : e = match k with
   | FId -> e
   | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
   | FApp1 (v2, k) -> plug_in_handle (App (e, Val v2)) k
   | FOp (name, k) -> plug_in_handle (Op (name, e)) k
-  | FCall (k1, h, k2) ->
-    plug_in_handle (With (h, plug_in_handle e k2)) k1
-
-let rec plug_all (e : e) ((k, c2) : cont) : e =
+ 
+let rec plug_all (e : e) ((k, k2) : cont) : e =
   let e_in_handle = plug_in_handle e k in
-  match c2 with
+  match k2 with
   | GId -> e_in_handle
-  | GHandle (k, h, c2) ->
+  | GHandle (h, k, k2) ->
     let e_handle = With (h, e_in_handle) in
-    plug_all e_handle (k, c2)
+    plug_all e_handle (k, k2)
 
 (* 値を文字列にする関数 *)
 let rec v_to_string (v : v) : string = match v with
   | Var (x) -> x
   | Fun (x, e) -> "(fun " ^ x ^ " -> " ^ e_to_string e ^ ")"
-  | Cont (x, k, c) ->
+  | Cont (x, k) ->
     "(fun " ^ x ^ " => " ^
-    e_to_string (plug_in_handle (Val (Var x)) c) ^ ")"
+    e_to_string (plug_all (Val (Var x)) (k FId)) ^ ")"
 
 and h_to_string : h -> string = fun {return; ops} ->
   let return_strs = match return with (x, e) ->
