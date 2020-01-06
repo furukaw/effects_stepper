@@ -36,18 +36,20 @@ expr:
         { $1 }
 | value
         { Val ($1) }
+| FUN VAR RIGHT expr
+        { Val (Fun ($2, $4)) }
 | simple_expr simple_expr
         { App ($1, $2) }
 | OP simple_expr
         { Op ($1, $2) }
 | WITH HANDLER LBRACE handler RBRACE HANDLE expr
         { With ($4, $7) }
+| WITH LPAREN HANDLER LBRACE handler RBRACE RPAREN HANDLE expr
+        { With ($5, $9) }
 
 value:
 | simple_value
         { $1 }
-| FUN VAR RIGHT expr
-        { Fun ($2, $4) }
 
 simple_value:
 | VAR
