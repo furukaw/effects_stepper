@@ -7,7 +7,7 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | Val (v) -> apply_in k v k2
   | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
   | Op (name, e) -> eval e (FOp (name, k)) k2
-  | With (h, e) -> eval e FId (GHandle (k, h, k2))
+  | With (h, e) -> eval e FId (GHandle (h, k, k2))
 
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
@@ -29,12 +29,12 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
      | _ -> failwith "type error")
   | FOp (name, k) -> apply_out k2 (OpCall (name, v, k))
   | FCall (k'', h, k') ->
-    apply_in k' v (GHandle (k'', h, k2))
+    apply_in k' v (GHandle (h, k'', k2))
 
 (* 全体の継続を適用する関数 *)
 and apply_out (k2 : k2) (a : a) : a = match k2 with
   | GId -> a
-  | GHandle (k, h, k2) ->
+  | GHandle (h, k, k2) ->
     apply_handler k h a k2
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
@@ -53,7 +53,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
          With (h, plug_in_handle (Op (name, Val v)) k') in
        let new_var = gen_var_name () in
        let cont_value =
-         Cont (new_var, fun k -> FCall (k, h, k')) in
+         Cont (new_var, fun k'' -> FCall (k'', h, k')) in
        let reduct = (* e[v/x, k[with h handle k']/y] *)
          subst e [(x, v); (y, cont_value)] in
        memo redex reduct (k, k2);

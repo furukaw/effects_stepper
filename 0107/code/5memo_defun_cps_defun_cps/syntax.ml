@@ -23,7 +23,7 @@ and k = FId
       | FOp of string * k
       | FCall of k * h * k
 and k2 = GId
-       | GHandle of k * h * k2
+       | GHandle of h * k * k2
 
 type cont = k * k2
 
@@ -41,7 +41,7 @@ let rec plug_all (e : e) ((k, k2) : cont) : e =
   let e_in_handle = plug_in_handle e k in
   match k2 with
   | GId -> e_in_handle
-  | GHandle (k, h, k2) ->
+  | GHandle (h, k, k2) ->
     let e_handle = With (h, e_in_handle) in
     plug_all e_handle (k, k2)
 

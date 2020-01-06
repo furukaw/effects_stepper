@@ -38,7 +38,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
      | None ->
        k2 (OpCall (name, v, FCall (k, h, k'))) (* 外の継続を適用 *)
      | Some (x, y, e) ->
-       let cont_value = Cont (fun k -> FCall (k, h, k')) in
+       let cont_value = Cont (fun k'' -> FCall (k'', h, k')) in
        let reduct = subst e [(x, v); (y, cont_value)] in
        eval reduct k k2)
 
