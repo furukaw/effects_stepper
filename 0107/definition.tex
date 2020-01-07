@@ -62,7 +62,7 @@ algebraic effects の特徴は、オペレーション呼び出しの意味が�
 
 \subsection{構文の定義}
 \label{subsection:syntax}
-型無し$\lambda$計算と algebraic effects からなる対象言語を図 \ref{figure:abstract_syntax}の \texttt{e} と定義する。ただし継続 \texttt{fun x => e} は入力プログラムに含まれることはなく、実行の過程のみで現れる構文である。
+型無し$\lambda$計算と algebraic effects からなる対象言語を図 \ref{figure:abstract_syntax}の \texttt{e} と定義する。
 \texttt{h} のオペレーション節に出てくる \texttt{op} たちは互いに
 全て異ならくてはいけない。
 
@@ -73,7 +73,6 @@ algebraic effects の特徴は、オペレーション呼び出しの意味が�
 v  :=                                      (値)
       x                                    変数
     | fun x -> e                           関数
-    | fun x => e                           継続
 e  :=                                      (式)
       v                                    値
     | e e                                  関数適用
@@ -206,7 +205,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \end{figure}
 
 このインタプリタは、\texttt{handle} 節内の実行については普通の CPS に
-なっており、メタ継続である \texttt{k} は「直近のハンドラまでの継続」で
+なっており、継続である \texttt{k} は「直近のハンドラまでの継続」で
 ある。関数 \texttt{eval} の下から2行目で \texttt{with handle} 文を
 実行する際、再帰呼び出しの継続として
 \texttt{(fun x -> Return x)} を渡していて、これによって
