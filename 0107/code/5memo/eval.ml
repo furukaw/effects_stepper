@@ -15,6 +15,7 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
   | Op (name, e) -> eval e (FOp (name, k)) k2
   | With (h, e) -> eval e FId (GHandle (h, k, k2))
 
+(* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> apply_out k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
