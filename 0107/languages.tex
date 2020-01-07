@@ -25,31 +25,4 @@ shift/reset は algebraic effects と同様に限定継続を変数に束縛し�
 \subsection{Multicore OCaml}
 \label{subsection:multicore_ocaml}
 
-Multicore OCaml は、OCaml の構文に algebraic effects を追加した構文を持つ。我々は \ref{section:transform} 節で得られたステッパをもとにして、Multicore OCaml の algebraic effects を含む一部の構文を対象にしたステッパの実装を目指している。以下に Multicore OCaml の algebraic effects を含むプログラムのステップ表示の例を示す。
-
-\begin{verbatim}
-Input :  (try ((perform (E 1)) + (2 + (perform (E 4))))
-          with | effect (E n) k -> (continue k n))
-Step 1:  (continue (fun x => (try ((perform (E 1)) + (2 + x))
-                              with | effect (E n) k -> (continue k n))) 4)
-Step 2:  (try ((perform (E 1)) + (2 + 4))
-          with | effect (E n) k -> (continue k n))
-Step 3:  (try ((perform (E 1)) + 6)
-          with | effect (E n) k -> (continue k n))
-Step 4:  (continue (fun y => (try (y + 6)
-                              with | effect (E n) k -> (continue k n))) 1)
-Step 5:  (try (1 + 6) with | effect (E n) k -> (continue k n))
-Step 6:  (try 7 with | effect (E n) k -> (continue k n))
-Step 7:  7
-\end{verbatim}
-
-Multicore OCaml の「エフェクト」は \ref{section:definition} 節で定義した言語の algebraic effects のオペレーションとほとんど同じものだが、以下のような違いがある。
-
-\begin{itemize}
-\item (ハンドルの構文) \texttt{with \{return x -> er, op1(x; k) -> e1, ...\} handle e} は、Multicore OCaml では \texttt{match e with x -> er | effect (Op1 x) k -> e1 | ...\ } と書ける。
-\item (宣言) \texttt{effect E : t1 -> t2} と書くことで、\texttt{t1} 型の引数をとって \texttt{t2} 型を返すエフェクト \texttt{E} が宣言できる。宣言していないエフェクトは使用できない。
-\item (実行) エフェクトを呼び出す際には、 \texttt{perform (E e)} というように関数 \texttt{perform} に渡す。
-\item (継続の適用) 継続 \texttt{k} に式 \texttt{e} を渡して実行を再開するには \texttt{continue k v} と書く。同じ継続は1度しか適用できない。
-\end{itemize}
-
-このような構文の違いはあるものの、継続が one-shot であることを除いて簡約のされかたは \ref{section:definition} 節で定めた言語のインタプリタと同様なので、インタプリタ関数を用意できれば変換によってステッパが導出できると考えられる。
+Multicore OCaml は、OCaml の構文に algebraic effects を追加した構文を持つ。我々は \ref{section:transform} 節で得られたステッパをもとにして、Multicore OCaml の algebraic effects を含む一部の構文を対象にしたステッパの実装を目指している。Multicore OCaml の「エフェクト」は \ref{section:definition} 節で定義した言語の algebraic effects のオペレーションとほとんど同じものであり、継続が one-shot であることを除いて簡約のされかたは \ref{section:definition} 節で定めた言語のインタプリタと同様なので、インタプリタ関数を用意できれば変換によってステッパが導出できると考えられる。

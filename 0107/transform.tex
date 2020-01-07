@@ -24,8 +24,7 @@
 義されるものである。この変換は機械的に行うことができる。
 
 具体的に図\ref{figure:1cps}のプログラムの継続 \texttt{k} 型の$\lambda$式を
-非関数化するには次のようにする。
-結果は図 \ref{figure:k_2defun}と図 \ref{figure:2defun}のようになる。
+非関数化するには次のようにする。結果は図 \ref{figure:k_2defun}と図 \ref{figure:2defun}のようになる。
 
 %まず、図\ref{figure:1cps}のプログラムの \texttt{k} 型の$\lambda$式を非関数化する。非関数化は以下の手順によって行われる。
 \begin{enumerate}
@@ -55,6 +54,7 @@ and k = FId                 (* [.] *)
 
 \begin{figure}
   % code/2defun/eval.ml より
+  % インデントした
 \begin{verbatim}
 (* CPS インタプリタを非関数化した関数 *)
 let rec eval (exp : e) (k : k) : a = match exp with
@@ -70,37 +70,22 @@ and apply_in (k : k) (v : v) : a = match k with
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k))
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
-     | Fun (x, e) ->
-       let reduct = subst e [(x, v2)] in
-       eval reduct k
-     | Cont (cont_value) -> (cont_value k) v2
-     | _ -> failwith "type error")
+      | Fun (x, e) ->
+        let reduct = subst e [(x, v2)] in
+        eval reduct k
+      | Cont (cont_value) ->
+        (cont_value k) v2
+      | _ -> failwith "type error")
   | FOp (name, k) ->
     OpCall (name, v, (fun v -> apply_in k v))  (* Op 呼び出しの情報を返す *)
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) : a = match a with
-  | Return v ->
-    (match h with {return = (x, e)} ->
-       let reduct = subst e [(x, v)] in
-       eval reduct k)
-  | OpCall (name, v, va) ->
-    (match search_op name h with
-     | None -> OpCall (name, v, (fun v ->
-           let a' = va v in
-           apply_handler k h a'))
-     | Some (x, y, e) ->
-       let cont_value =
-         Cont (fun k'' -> fun v ->
-             let a' = va v in
-             apply_handler k'' h a') in
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k)
+and apply_handler (k : k) (h : h) (a : a) : a = ... (* 非関数化前と同じ *)
 
 (* 初期継続を渡して実行を始める *)
 let interpreter (e : e) : a = eval e FId
 \end{verbatim}
-\caption{CPS インタプリタを非関数化して CPS 変換したプログラム}
+\caption{CPS インタプリタを非関数化したプログラム}
 \label{figure:2defun}
 \end{figure}
 
@@ -125,58 +110,8 @@ let interpreter (e : e) : a = eval e FId
 %\label{figure:k_3cps}
 %\end{figure}
 
-\begin{figure}
-  % code/3cps/eval.ml より
-\begin{verbatim}
-(* CPS インタプリタを非関数化して CPS 変換した関数 *)
-let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
-  | Val (v) -> apply_in k v k2
-  | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
-  | Op (name, e) -> eval e (FOp (name, k)) k2
-  | With (h, e) ->
-    eval e FId (fun a -> apply_handler k h a k2)  (* GHandle に変換される *)
 
-(* handle 節内の継続を適用する関数 *)
-and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
-  | FId -> k2 (Return v)  (* handle 節の外の継続を適用 *)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
-  | FApp1 (v2, k) -> let v1 = v in
-    (match v1 with
-     | Fun (x, e) ->
-       let reduct = subst e [(x, v2)] in
-       eval reduct k k2
-     | Cont (cont_value) ->
-       (cont_value k) v2 k2
-     | _ -> failwith "type error")
-  | FOp (name, k) ->
-    k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))
-
-(* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
-  | Return v ->
-    (match h with {return = (x, e)} ->
-       let reduct = subst e [(x, v)] in
-       eval reduct k k2)
-  | OpCall (name, v, va) ->
-    (match search_op name h with
-     | None ->
-       k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 外の継続を適用 *)
-           va v (fun a' -> apply_handler k h a' k2'))))  (* GHandle に変換 *)
-     | Some (x, y, e) ->
-       let cont_value =
-         Cont (fun k'' -> fun v -> fun k2 ->
-             va v (fun a' -> apply_handler k'' h a' k2)) in  (* GHandle に変換 *)
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k k2)
-
-(* 初期継続を渡して実行を始める *)
-let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される *)
-\end{verbatim}
-\caption{CPS インタプリタを非関数化して CPS 変換したプログラム}
-\label{figure:3cps}
-\end{figure}
-
-非関数化したした後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
+非関数化した後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
 てオペレーション呼び出しの引数を実行するフレーム \texttt{FOp} が加わっ
 ていることがわかる。これが、ハンドラ内の実行のコンテキスト情報である。
 
@@ -187,7 +122,7 @@ let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される
 なくなってしまう。
 
 ハンドラ内の評価文脈を表すデータ構造は非関数化により導くことができたが、
-図 \ref{figure:2defun}のインタプリタはオペレンーション呼び出しなどの実
+図 \ref{figure:2defun}のインタプリタはオペレーション呼び出しなどの実
 装で継続を非末尾の位置で使っており純粋な CPS 形式にはなっていないため、
 全体のコンテキストは得られていない。そのため、このコンテキストを使って
 ステッパを構成してもプログラム全体を再構成することはできない。プログラ
@@ -195,7 +130,20 @@ let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される
 もう一度 CPS 変換と非関数化を施し、純粋な CPS 形式にする必要がある。
 
 %非関数化したことで継続 \texttt{k} がコンストラクタとして表されるようになったので、継続の構造を参照することや、継続を部分的に書き換えることが可能になった。
-%具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
+%具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の
+関数 \texttt{stepper} に入力プログラム
+\texttt{((fun a -> a) (with handler \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))}
+を表す構文木を渡して実行を始めた場合
+\texttt{(a (fun c -> c))} を関数 \texttt{eval}
+に渡して実行を始める際の継続は
+\texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}
+である。これは式 \texttt{(a (fun c -> c))} のコンテキスト
+\texttt{((fun a -> a) (with \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))}
+のうち、\texttt{handle} の内側に対応している。\texttt{handle}
+から外側が継続に含まれないのは、関数 \texttt{eval} で
+\texttt{with h handle e} の \texttt{e}
+の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。
+コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
 
 \subsection{CPS 変換}
 \label{subsection:3cps}
@@ -208,11 +156,11 @@ let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される
 この変換によって現れる継続は \texttt{a -> a} 型である。この型
 \texttt{a -> a} の名前を \texttt{k2} とする。
 %図\ref{figure:2defun} では、末尾再帰でない再帰呼び出しの際に継続が初期化されてしまうせいでコンテキスト全体に対応する情報が継続に含まれなかったので、全ての継続を引数に持つようにするため、さらに CPS 変換を施す。この変換によって現れる継続は \texttt{a -> a} 型である。この型 \texttt{a -> a} の名前を \texttt{k2} とする。
-変換したプログラムが図 \ref{figure:3cps} である。
+変換したプログラムは付録の図 \ref{figure:3cps} に示す。
 
 このプログラムは、図 \ref{figure:2defun}のプログラムを機械的に CPS 変
 換すれば得られるもので、
-\texttt{OpCall} の第3引数も CPS 変換されている点にさえ注意すれば、
+\texttt{OpCall} の第3引数も CPS 変換される点にさえ注意すれば、
 特に説明を必要とする箇所はない。
 プログラム中には、次節で非関数化する部分にその旨、コメントが付してある。
 この変換により、すべての（serious な）関数呼び出しが末尾呼び出しとな
@@ -225,7 +173,7 @@ CPS 変換ですべてのコンテキスト情報がふたつの継続に集約�
 は、CPS 変換したことにより新たに現れた \texttt{a -> a} 型の関数を非関
 数化してデータ構造に変換する。
 非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、
-インタプリタは図 \ref{figure:4defun} に変換される。
+インタプリタは付録の図 \ref{figure:4defun} に変換される。
 
 %CPS 変換したことにより新たに現れた \texttt{a -> a} 型の匿名関数を非関数化する。非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、ステッパ関数は図 \ref{figure:4defun} に変換される。
 
@@ -241,72 +189,22 @@ and k2 = GId
 \end{figure}
 
 \begin{figure}
-  % code/4defun/syntax.ml より
-\begin{verbatim}
-(* CPS インタプリタを非関数化して CPS 変換して非関数化した関数 *)
-let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
-  | Val (v) -> apply_in k v k2
-  | App (e1, e2) -> eval e2 (FApp2 (e1, k)) k2
-  | Op (name, e) -> eval e (FOp (name, k)) k2
-  | With (h, e) -> eval e FId (GHandle (h, k, k2))
-
-(* handle 節内の継続を適用する関数 *)
-and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
-  | FId -> apply_out k2 (Return v)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
-  | FApp1 (v2, k) -> let v1 = v in (match v1 with
-      | Fun (x, e) ->
-        let reduct = subst e [(x, v2)] in
-        eval reduct k k2
-      | Cont (cont_value) ->
-        (cont_value k) v2 k2
-      | _ -> failwith "type error")
-  | FOp (name, k) ->
-    apply_out k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))
-
-(* 全体の継続を適用する関数 *)
-and apply_out (k2 : k2) (a : a) : a = match k2 with
-  | GId -> a
-  | GHandle (h, k, k2) -> apply_handler k h a k2
-
-(* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
-  | Return v -> (match h with {return = (x, e)} ->
-      let reduct = subst e [(x, v)] in eval reduct k k2)
-  | OpCall (name, v, va) ->
-    (match search_op name h with
-     | None ->
-       apply_out k2 (OpCall (name, v,
-                             (fun v -> fun k2' -> va v (GHandle (h, k, k2')))))
-     | Some (x, y, e) ->
-       let cont_value =
-         Cont (fun k'' -> fun v -> fun k2 -> va v (GHandle (h, k'', k2))) in
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k k2)
-
-(* 初期継続を渡して実行を始める *)
-let interpreter (e : e) : a = eval e FId GId
-\end{verbatim}
-\caption{CPS インタプリタを非関数化して CPS 変換して非関数化したプログラム}
-\label{figure:4defun}
-\end{figure}
-
-\begin{figure}
+  % インデントした
 \begin{verbatim}
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> apply_out k2 (Return v)
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
   | FApp1 (v2, k) -> let v1 = v in (match v1 with
-      | Fun (x, e) ->
-        let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
-        let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
-        memo redex reduct (k, k2); eval reduct k k2
-      | Cont (x, (k', k2'), cont_value) ->
-        let redex = App (Val v1, Val v2) in  (* (fun x => k2'[k'[x]]) v2 *)
-        let reduct = plug_all (Val v2) (k', k2') in  (* k2'[k'[v2]] *)
-        memo redex reduct (k, k2); (cont_value k) v2 k2
-      | _ -> failwith "type error")
+     | Fun (x, e) ->
+       let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
+       let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
+       memo redex reduct (k, k2); eval reduct k k2
+     | Cont (x, (k', k2'), cont_value) ->
+       let redex = App (Val v1, Val v2) in  (* (fun x => k2'[k'[x]]) v2 *)
+       let reduct = plug_all (Val v2) (k', k2') in  (* k2'[k'[v2]] *)
+       memo redex reduct (k, k2); (cont_value k) v2 k2
+     | _ -> failwith "type error")
   | FOp (name, k) ->
     apply_out k2 (OpCall (name, v, (k, GId),
                           (fun v -> fun k2' -> apply_in k v k2')))
@@ -315,19 +213,19 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-       let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
-       let reduct = subst e [(x, v)] in  (* e[v/x] *)
-       memo redex reduct (k, k2); eval reduct k k2)
+      let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
+      let reduct = subst e [(x, v)] in  (* e[v/x] *)
+      memo redex reduct (k, k2); eval reduct k k2)
   | OpCall (name, v, (k', k2'), vk2a) -> (match search_op name h with
       | None ->
         apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
-                              (fun v -> fun k2' -> vk2a v (GHandle (h, k, k2')))))
+          (fun v -> fun k2' -> vk2a v (GHandle (h, k, k2')))))
       | Some (x, y, e) ->
         (* with {name(x; y) -> e} handle k2'[k'[name v]] *)
         let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
         let cont_value =
           Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
-                (fun k'' -> fun v -> fun k2 -> vk2a v (GHandle (h, k'', k2)))) in
+            (fun k'' -> fun v -> fun k2 -> vk2a v (GHandle (h, k'', k2)))) in
         (* e[v/x, (fun n => with {name(x; y) -> e} handle k2'[k'[n]]) /y *)
         let reduct = subst e [(x, v); (y, cont_value)] in
         memo redex reduct (k, k2);
@@ -355,29 +253,17 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 た体系に沿ったコンテキストのデータ型が機械的に得られたことには一定の価
 値があると考えられる。
 
-次に図 \ref{figure:4defun}を見てみよう。
-ここでは、全ての時点でのコンテキスト情報がふたつの
-引数 \texttt{k} と \texttt{k2} によって表現されている。
-これはつまり、任意の時点で全体のコンテキスト情報が得られていることを
-意味している。
-この情報を使うと、簡約が行われるたびにプログラム全体を再構成でき、
-したがってステッパを作ることができる。
-
-%\ref{subsection:2defun} 節で示した例について比較する。\texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を表す構文木を関数 \texttt{eval} に渡して実行を始める際の継続 \texttt{k} は \ref{subsection:2defun} 節と同様に \texttt{{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}} である。そして継続 \texttt{k2} は \texttt{GHandle ()}
-%具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の関数 \texttt{stepper} に入力プログラム \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))} を表す構文木を渡して実行を始めた場合、\texttt{(a (fun c -> c))} を関数 \texttt{eval} に渡して実行を始める際の継続は \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))} である。これは式 \texttt{(a (fun c -> c))} のコンテキスト \texttt{((fun a -> a) (with handler \{return x -> x, a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))} のうち、\texttt{handle} の内側に対応している。\texttt{handle} から外側が継続に含まれないのは、関数 \texttt{eval} で \texttt{with h handle e} の \texttt{e} の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
-
 \subsection{出力}
 \label{subsection:memo}
 
 \ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数
 に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後
-のプログラムを出力するように、図\ref{figure:4defun} のインタプリタを変
-更するとステッパが得られる。具体的には、簡約が起こる部分でプログラム全
+のプログラムを出力するようにするとステッパが得られる。具体的には、簡約が起こる部分でプログラム全
 体を再構成し表示するようにする。図\ref{figure:5memo}
 が表示を行う関数 \texttt{memo} を
 足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler}
-である。他の関数は簡約している部分が無いので図 \ref{figure:4defun} と
-変わらない。
+である。
+(他の関数は簡約している部分が無いので図 \ref{figure:4defun} と同じになる。)
 %\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が副作用を足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
 
 ここで関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
@@ -466,9 +352,9 @@ let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
   | Return v -> (match h with {return = (x, e)} ->
-     let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
-     let reduct = subst e [(x, v)] in  (* e[v/x] *)
-     memo redex reduct (c, c2); eval reduct (c, k) c2)
+    let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
+    let reduct = subst e [(x, v)] in  (* e[v/x] *)
+    memo redex reduct (c, c2); eval reduct (c, k) c2)
   | OpCall (name, v, (c', c2'), k') ->
     (match search_op name h with
       | None -> OpCall (name, v, (c', compose_c2 c2' h (c, GId)),

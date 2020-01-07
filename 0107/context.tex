@@ -2,18 +2,6 @@
 \section{ステッパの実装方法とコンテキスト}
 \label{section:context}
 
-%ステッパは簡約のたびに簡約前後のプログラムを出力するインタプリタである。例えばプログラム \texttt{((fun a -> a) ((fun b -> b) (fun c -> c)))} を入力した場合、以下のように出力したい。
-
-%\begin{quote}
-%\begin{verbatim}
-%((fun a -> a) ((fun b -> b) (fun c -> c)))
-%((fun a -> a) (fun c -> c))
-%
-%((fun a -> a) (fun c -> c))
-%(fun c -> c)
-%\end{verbatim}
-%\end{quote}
-
 ステッパは small-step による実行と同じなので、small-step のインタプリ
 タを書けば実装できる。実際、Whitington \& Ridge \cite{EPTCS294.3} は small-step のインタプリ
 タを書くことで OCaml に対するステッパを実装している。
@@ -40,19 +28,19 @@ type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
 
 (* 式 *)
-type e = Val of v      (* 値 *)
+and e = Val of v      (* 値 *)
        | App of e * e  (* e e *)
 
 (* インタプリタ *)
 let rec eval (exp : e) : v = match exp with
   | Val (v) -> v  (* 値ならそのまま返す *)
   | App (e1, e2) ->
-    (let v2 = eval e2 in  (* 引数部分を実行 *)
-     let v1 = eval e1 in  (* 関数部分を実行 *)
-     let reduct = match v1 with
-       | Fun (x, e) -> subst e [(x, v2)]  (* 代入 e[v2/x] *)
-       | _ -> failwith "type error" in  (* 関数部分が関数でなければ型エラー *)
-     eval reduct)  (* 代入後の式を実行 *)
+    let v2 = eval e2 in  (* 引数部分を実行 *)
+    let v1 = eval e1 in  (* 関数部分を実行 *)
+    let reduct = match v1 with
+      | Fun (x, e) -> subst e [(x, v2)]  (* 代入 e[v2/x] *)
+      | _ -> failwith "type error" in  (* 関数部分が関数でなければ型エラー *)
+    eval reduct  (* 代入後の式を実行 *)
 \end{verbatim}
 \caption{型無し$\lambda$計算とそのインタプリタ}
 \label{figure:lambda}
@@ -91,14 +79,14 @@ type c = CId             (* [.] *)
 let rec eval (exp : e) (c : c) : v = match exp with
   | Val (v) -> v
   | App (e1, e2) ->
-    (let v2 = eval e2 (CApp2 (e1, c)) in  (* コンテキストを1層深くする *)
-     let v1 = eval e1 (CApp1 (v2, c)) in  (* コンテキストを1層深くする *)
-     let redex = App (Val v1, Val v2) in
-     let reduct = match v1 with
-       | Fun (x, e) -> subst e [(x, v2)]
-       | _ -> failwith "type error" in
-     memo redex reduct c;                 (* コンテキストを利用して式全体を出力 *)
-     eval reduct c)
+    let v2 = eval e2 (CApp2 (e1, c)) in  (* コンテキストを1層深くする *)
+    let v1 = eval e1 (CApp1 (v2, c)) in  (* コンテキストを1層深くする *)
+    let redex = App (Val v1, Val v2) in
+    let reduct = match v1 with
+      | Fun (x, e) -> subst e [(x, v2)]
+      | _ -> failwith "type error" in
+    memo redex reduct c;  (* コンテキストを利用して式全体を出力 *)
+    eval reduct c
 
 (* 実行を始める *)
 let stepper (exp : e) = eval exp CId

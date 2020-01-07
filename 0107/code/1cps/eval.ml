@@ -26,16 +26,16 @@ and apply_handler (k : k) (h : h) (a : a) : a = match a with
     (match h with {return = (x, e)} ->  (* handler {return x -> e, ...} として*)
        let reduct = subst e [(x, v)] in (* e[v/x] に簡約される *)
        eval reduct k)                   (* e[v/x] を実行 *)
-  | OpCall (name, v, k') ->        (* オペレーション呼び出しがあったとき *)
+  | OpCall (name, v, m) ->        (* オペレーション呼び出しがあったとき *)
     (match search_op name h with
      | None ->                     (* ハンドラで定義されていない場合、 *)
        OpCall (name, v, (fun v ->  (* OpCall の継続の後に現在の継続を合成 *)
-           let a' = k' v in
+           let a' = m v in
            apply_handler k h a'))
      | Some (x, y, e) ->           (* ハンドラで定義されている場合、 *)
        let cont_value =
          Cont (fun k'' -> fun v -> (* 適用時にその後の継続を受け取って合成 *)
-             let a' = k' v in
+             let a' = m v in
              apply_handler k'' h a') in
        let reduct = subst e [(x, v); (y, cont_value)] in
        eval reduct k)

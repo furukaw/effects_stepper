@@ -31,16 +31,16 @@ and apply_handler (k : k) (h : h) (a : a) : a = match a with
     (match h with {return = (x, e)} ->
        let reduct = subst e [(x, v)] in
        eval reduct k)
-  | OpCall (name, v, va) ->
+  | OpCall (name, v, m) ->
     (match search_op name h with
      | None ->
        OpCall (name, v, (fun v ->
-           let a' = va v in
+           let a' = m v in
            apply_handler k h a'))
      | Some (x, y, e) ->
        let cont_value =
          Cont (fun k'' -> fun v ->
-             let a' = va v in
+             let a' = m v in
              apply_handler k'' h a') in
        let reduct = subst e [(x, v); (y, cont_value)] in
        eval reduct k)
