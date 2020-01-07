@@ -315,7 +315,7 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-       let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
+       let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
        let reduct = subst e [(x, v)] in  (* e[v/x] *)
        memo redex reduct (k, k2); eval reduct k k2)
   | OpCall (name, v, (k', k2'), vk2a) -> (match search_op name h with
@@ -323,12 +323,12 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
         apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
                               (fun v -> fun k2' -> vk2a v (GHandle (h, k, k2')))))
       | Some (x, y, e) ->
-        (* with handler {name(x; y) -> e} handle k2'[k'[name v]] *)
+        (* with {name(x; y) -> e} handle k2'[k'[name v]] *)
         let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
         let cont_value =
           Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
                 (fun k'' -> fun v -> fun k2 -> vk2a v (GHandle (h, k'', k2)))) in
-        (* e[v/x, (fun n => with handler {...} handle k2'[k'[n]]) /y *)
+        (* e[v/x, (fun n => with {name(x; y) -> e} handle k2'[k'[n]]) /y *)
         let reduct = subst e [(x, v); (y, cont_value)] in
         memo redex reduct (k, k2);
         eval reduct k k2)
@@ -466,7 +466,7 @@ let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
   | Return v -> (match h with {return = (x, e)} ->
-     let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
+     let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
      let reduct = subst e [(x, v)] in  (* e[v/x] *)
      memo redex reduct (c, c2); eval reduct (c, k) c2)
   | OpCall (name, v, (c', c2'), k') ->
@@ -475,13 +475,13 @@ and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
         (fun v' c2'' -> let a' = k' v' (GHandle (h, c, c2'')) in
           apply_handler (c, k) h a' c2''))
       | Some (x, y, e) ->
-        (* with handler {name(x; y) -> e} handle c2'[c'[name v]] *)
+        (* with {name(x; y) -> e} handle c2'[c'[name v]] *)
         let redex = With (h, plug_all (Op (name, Val v)) (c', c2')) in
         let cont_value = Cont (gen_var_name (),
           (c', compose_c2 c2' h (FId, GId)), (fun (c'', k'') v' c2'' ->
             let a' = k' v' (GHandle (h, c'', c2'')) in
             apply_handler (c'', k'') h a' c2)) in
-       (* e[v/x, (fun n => with h handle c2'[c'[y]])/y *)
+       (* e[v/x, (fun n => with {name(x; y) -> e} handle c2'[c'[y]])/y *)
        let reduct = subst e [(x, v); (y, cont_value)] in
        memo redex reduct (c, c2); eval reduct (c, k) c2)
 

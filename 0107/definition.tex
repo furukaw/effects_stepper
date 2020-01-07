@@ -15,8 +15,8 @@ algebraic effects は、例外や状態などの副作用を表現するため�
 特徴は、副作用の意味がそれを処理するハンドラ部分で決まるところである。
 例えば、以下のプログラムを考える。
 \begin{verbatim}
-with handler {return x -> x;
-              op(x; k) -> k (x + 1)}
+with {return x -> x;
+      op(x; k) -> k (x + 1)}
 handle 10 + op(3)
 \end{verbatim}
 \texttt{with h handle e} は、\texttt{h} というハンドラ
@@ -80,8 +80,8 @@ e  :=                                      (式)
     | op e                                 オペレーション呼び出し
     | with h handle e                      ハンドル
 h  :=                                      (ハンドラ)
-      handler {return x -> e;                      return 節
-               op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
+      {return x -> e;                      return 節
+       op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
 \end{verbatim}
 \caption{対象言語の構文}
 \label{figure:abstract_syntax}
@@ -89,7 +89,7 @@ h  :=                                      (ハンドラ)
 
 %意味論については \ref{subsection:1cps} 節で厳密に扱うが、例えばプログラム \texttt{(with handler \{return x -> (fun a -> x), op(x, k) -> k x\} handle ((op (fun b -> b)) 2)) 3} は以下のように実行される。
 
-%right-to-left て評価するとして、まず関数適用の引数部分 \texttt{3} を実行し、値 \texttt{3} を得る。次に関数部分の \texttt{with ... handle ...} を実行する。\texttt{with ... handle ...} ではまず \texttt{handle} 以降の \texttt{((op (fun b -> b)) 2)} を実行する。これは関数適用なのでまず引数部分の \texttt{2} を実行し、値 \texttt{2} を得る。次に関数部分 \texttt{(op (fun b -> b))} はオペレーション呼び出しであり、まず引数 \texttt{(fun b -> b)} を実行する。値 \texttt{(fun b -> b)} を得たら、\texttt{(op (fun b -> b))} を囲んでいる \texttt{with ... handle ...} を参照して、そこにオペレーション \texttt{op} が定義されているかどうかを見る。ここでは \texttt{op(x, k) -> k x} と定義されている。すると、\texttt{with ... handle ...} の部分が \texttt{(k x)[(fun b -> b)/x, (fun y => (with handler \{return x -> (fun a -> x), op(x, k) -> k x\} handle (y 2)))/k} に簡約され、次はこの式の実行に移る。この \texttt{k} に代入する値は、 \texttt{with ... handle ...} 式までの限定継続である。引数部分と関数部分をそれぞれ実行し、これらは元々値になっているのでそのままの値が返る。そして \texttt{(fun b -> b)} に継続 \texttt{(fun y => (with ... handle (y 2)))} を適用すると \texttt{(with ... handle ((fun b -> b) 2))} になるが、この適用は継続の適用なので、\texttt{fun b -> b} および \texttt{2} は既に実行した後だということが分かっており、次には \texttt{(fun b -> b) 2} の関数適用をする。これは \texttt{2} になり、ここで \texttt{handle ...} 内が値となった。すると今度は \texttt{with ... handle ...} がハンドラの return 節の \texttt{fun a -> x} に簡約される。このとき \texttt{x} は \texttt{handle ...} 内の値の \texttt{2} である。よってここでプログラム全体は \texttt{(fun b -> 2) 3} になっており、この関数適用をして最終結果は \texttt{2} になる。
+%right-to-left て評価するとして、まず関数適用の引数部分 \texttt{3} を実行し、値 \texttt{3} を得る。次に関数部分の \texttt{with ... handle ...} を実行する。\texttt{with ... handle ...} ではまず \texttt{handle} 以降の \texttt{((op (fun b -> b)) 2)} を実行する。これは関数適用なのでまず引数部分の \texttt{2} を実行し、値 \texttt{2} を得る。次に関数部分 \texttt{(op (fun b -> b))} はオペレーション呼び出しであり、まず引数 \texttt{(fun b -> b)} を実行する。値 \texttt{(fun b -> b)} を得たら、\texttt{(op (fun b -> b))} を囲んでいる \texttt{with ... handle ...} を参照して、そこにオペレーション \texttt{op} が定義されているかどうかを見る。ここでは \texttt{op(x, k) -> k x} と定義されている。すると、\texttt{with ... handle ...} の部分が \texttt{(k x)[(fun b -> b)/x, (fun y => (with handler\{return x -> (fun a -> x), op(x, k) -> k x\} handle (y 2)))/k} に簡約され、次はこの式の実行に移る。この \texttt{k} に代入する値は、 \texttt{with ... handle ...} 式までの限定継続である。引数部分と関数部分をそれぞれ実行し、これらは元々値になっているのでそのままの値が返る。そして \texttt{(fun b -> b)} に継続 \texttt{(fun y => (with ... handle (y 2)))} を適用すると \texttt{(with ... handle ((fun b -> b) 2))} になるが、この適用は継続の適用なので、\texttt{fun b -> b} および \texttt{2} は既に実行した後だということが分かっており、次には \texttt{(fun b -> b) 2} の関数適用をする。これは \texttt{2} になり、ここで \texttt{handle ...} 内が値となった。すると今度は \texttt{with ... handle ...} がハンドラの return 節の \texttt{fun a -> x} に簡約される。このとき \texttt{x} は \texttt{handle ...} 内の値の \texttt{2} である。よってここでプログラム全体は \texttt{(fun b -> 2) 3} になっており、この関数適用をして最終結果は \texttt{2} になる。
 
 %もし呼び出されたオペレーションがハンドラで定義されていなければさらに外のハンドラを参照して、その時の継続値は定義が見つかったハンドラまでの限定継続である。見つからなかった場合はエラーを起こす。
 
@@ -110,7 +110,7 @@ type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
        | Cont of (k -> k)   (* 継続 fun x => ... *)
 (* ハンドラ *)
-and h = {return : string * e;                 (* handler {return x -> e;      *)
+and h = {return : string * e;                         (* {return x -> e;      *)
           ops : (string * string * string * e) list}  (*  op(x; k) -> e; ...} *)
 (* 式 *)
 and e = Val of v          (* v *)
@@ -148,7 +148,7 @@ and a = Return of v               (* 値になった *)
 の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v}
 と値 \texttt{cont\_value} を代入した式を返す。
 関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数
-で、例えば \texttt{handler \{return x -> x; op1(y, k) -> k y\}} を表す
+で、例えば \texttt{\{return x -> x; op1(y, k) -> k y\}} を表す
 データを \texttt{h} とする
 と \texttt{search\_op "op2" h} は \texttt{None} を返し
 \texttt{search\_op "op1" h} は \texttt{Some (y, k, App (Var "k", Var
@@ -181,7 +181,7 @@ let rec eval (exp : e) (k : k) : a = match exp with
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler (k : k) (h : h) (a : a) : a = match a with
   | Return v ->                         (* handle 節内が値 v を返したとき *)
-    (match h with {return = (x, e)} ->  (* handler {return x -> e, ...} として*)
+    (match h with {return = (x, e)} ->  (* h は {return x -> e, ...} として *)
       let reduct = subst e [(x, v)] in (* e[v/x] に簡約される *)
       eval reduct k)                   (* e[v/x] を実行 *)
   | OpCall (name, v, k') ->        (* オペレーション呼び出しがあったとき *)
