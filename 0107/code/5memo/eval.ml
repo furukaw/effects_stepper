@@ -44,16 +44,16 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
        let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
        let reduct = subst e [(x, v)] in  (* e[v/x] *)
        memo redex reduct (k, k2); eval reduct k k2)
-  | OpCall (name, v, (k', k2'), vk2a) -> (match search_op name h with
+  | OpCall (name, v, (k', k2'), m) -> (match search_op name h with
       | None ->
         apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
-                              (fun v -> fun k2' -> vk2a v (GHandle (h, k, k2')))))
+                              (fun v -> fun k2' -> m v (GHandle (h, k, k2')))))
       | Some (x, y, e) ->
         (* with handler {name(x; y) -> e} handle k2'[k'[name v]] *)
         let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
         let cont_value =
           Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
-                (fun k'' -> fun v -> fun k2 -> vk2a v (GHandle (h, k'', k2)))) in
+                (fun k'' -> fun v -> fun k2 -> m v (GHandle (h, k'', k2)))) in
         (* e[v/x, (fun n => with handler {...} handle k2'[k'[n]]) /y *)
         let reduct = subst e [(x, v); (y, cont_value)] in
         memo redex reduct (k, k2);

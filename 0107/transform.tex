@@ -43,10 +43,10 @@
   % code/2defun/syntax.ml より
 \begin{verbatim}
 (* handle 内の継続 *)
-and k = FId                 (* [.] *)
-      | FApp2 of e * k      (* [e [.]] *)
-      | FApp1 of v * k      (* [[.] v] *)
-      | FOp of string * k   (* [op [.]] *)
+type k = FId                 (* [.] *)
+       | FApp2 of e * k      (* [e [.]] *)
+       | FApp1 of v * k      (* [[.] v] *)
+       | FOp of string * k   (* [op [.]] *)
 \end{verbatim}
 \caption{非関数化後の継続の型}
 \label{figure:k_2defun}
@@ -131,19 +131,19 @@ let interpreter (e : e) : a = eval e FId
 
 %非関数化したことで継続 \texttt{k} がコンストラクタとして表されるようになったので、継続の構造を参照することや、継続を部分的に書き換えることが可能になった。
 %具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の
-関数 \texttt{stepper} に入力プログラム
-\texttt{((fun a -> a) (with handler \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))}
-を表す構文木を渡して実行を始めた場合
-\texttt{(a (fun c -> c))} を関数 \texttt{eval}
-に渡して実行を始める際の継続は
-\texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}
-である。これは式 \texttt{(a (fun c -> c))} のコンテキスト
-\texttt{((fun a -> a) (with \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))}
-のうち、\texttt{handle} の内側に対応している。\texttt{handle}
-から外側が継続に含まれないのは、関数 \texttt{eval} で
-\texttt{with h handle e} の \texttt{e}
-の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。
-コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
+%% 関数 \texttt{stepper} に入力プログラム
+%% \texttt{((fun a -> a) (with handler \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))}
+%% を表す構文木を渡して実行を始めた場合
+%% \texttt{(a (fun c -> c))} を関数 \texttt{eval}
+%% に渡して実行を始める際の継続は
+%% \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}
+%% である。これは式 \texttt{(a (fun c -> c))} のコンテキスト
+%% \texttt{((fun a -> a) (with \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))}
+%% のうち、\texttt{handle} の内側に対応している。\texttt{handle}
+%% から外側が継続に含まれないのは、関数 \texttt{eval} で
+%% \texttt{with h handle e} の \texttt{e}
+%% の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。
+%% コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
 
 \subsection{CPS 変換}
 \label{subsection:3cps}
@@ -181,8 +181,8 @@ CPS 変換ですべてのコンテキスト情報がふたつの継続に集約�
   % code/4defun/syntax.ml より
 \begin{verbatim}
 (* 全体のメタ継続 *)
-and k2 = GId
-       | GHandle of h * k * k2
+type k2 = GId
+        | GHandle of h * k * k2
 \end{verbatim}
 \caption{2回目の非関数化後の継続の型}
 \label{figure:k2_4defun}
@@ -216,20 +216,20 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
       let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
       let reduct = subst e [(x, v)] in  (* e[v/x] *)
       memo redex reduct (k, k2); eval reduct k k2)
-  | OpCall (name, v, (k', k2'), vk2a) -> (match search_op name h with
-      | None ->
-        apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
-          (fun v -> fun k2' -> vk2a v (GHandle (h, k, k2')))))
-      | Some (x, y, e) ->
-        (* with {name(x; y) -> e} handle k2'[k'[name v]] *)
-        let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
-        let cont_value =
-          Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
-            (fun k'' -> fun v -> fun k2 -> vk2a v (GHandle (h, k'', k2)))) in
-        (* e[v/x, (fun n => with {name(x; y) -> e} handle k2'[k'[n]]) /y *)
-        let reduct = subst e [(x, v); (y, cont_value)] in
-        memo redex reduct (k, k2);
-        eval reduct k k2)
+  | OpCall (name, v, (k', k2'), m) -> (match search_op name h with
+    | None ->
+      apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
+        (fun v -> fun k2' -> m v (GHandle (h, k, k2')))))
+    | Some (x, y, e) ->
+      (* with {name(x; y) -> e} handle k2'[k'[name v]] *)
+      let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
+      let cont_value =
+        Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
+          (fun k'' -> fun v -> fun k2 -> m v (GHandle (h, k'', k2)))) in
+      (* e[v/x, (fun n => with {name(x; y) -> e} handle k2'[k'[n]]) /y *)
+      let reduct = subst e [(x, v); (y, cont_value)] in
+      memo redex reduct (k, k2);
+      eval reduct k k2)
 \end{verbatim}
 \caption{変換の後、出力関数を足して得られるステッパ}
 \label{figure:5memo}
@@ -276,7 +276,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 に制御を移す際には、図 \ref{figure:compose}に示される関数を使って
 コンテキストの結合を行なっている。
 
-\begin{figure}
+\begin{figure}[t]
   % code/5memo/eval.ml より
 \begin{verbatim}
 (* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
@@ -289,7 +289,7 @@ let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
 \label{figure:compose}
 \end{figure}
 
-\begin{figure}
+\begin{figure}[t]
   % code/6cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
@@ -306,8 +306,8 @@ and c = FId                (* [.] *)
       | FApp1 of v * c     (* [[.] v] *)
       | FOp of string * c  (* [op [.]] *)
 (* 全体のコンテキスト *)
-and c2 = GId                    (* [.] *)
-       | GHandle of h * c * c2  (* [[with h handle [.]]] *)
+and c2 = GId
+       | GHandle of h * c * c2
 \end{verbatim}
 \caption{継続の情報を保持するための言語やコンテキストの定義}
 \label{figure:k_6cps}
@@ -367,13 +367,13 @@ and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
           (c', compose_c2 c2' h (FId, GId)), (fun (c'', k'') v' c2'' ->
             let a' = k' v' (GHandle (h, c'', c2'')) in
             apply_handler (c'', k'') h a' c2)) in
-       (* e[v/x, (fun n => with {name(x; y) -> e} handle c2'[c'[y]])/y *)
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       memo redex reduct (c, c2); eval reduct (c, k) c2)
+        (* e[v/x, (fun n => with {name(x; y) -> e} handle c2'[c'[y]])/y *)
+        let reduct = subst e [(x, v); (y, cont_value)] in
+        memo redex reduct (c, c2); eval reduct (c, k) c2)
 
 let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 \end{verbatim}
-\caption{変換の結果得られたステッパ}
+\caption{変換の結果得られた、CPSインタプリタを基にしたステッパ}
 \label{figure:6cps}
 \end{figure}
 
