@@ -380,9 +380,9 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 変わらない。
 %\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が副作用を足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
 
-関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
+ここで関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
 
-\texttt{apply\_in} では普通の関数呼び出しと継続呼び出しが
+図 \ref{figure:5memo}を見ると \texttt{apply\_in} では普通の関数呼び出しと継続呼び出しが
 \texttt{memo} されている。また、\texttt{apply\_handler} では
 ハンドラが正常終了した場合とオペレーション呼び出しが起きた場合に
 それぞれ \texttt{memo} 関数が挿入されている。
@@ -491,7 +491,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 \label{figure:6cps}
 \end{figure}
 
-\subsection{非関数化されていないステッパ}
+\subsection{CPSインタプリタに基づいたステッパ}
 
 前節で algebraic effects を持つ言語に対するステッパを作ることができ
 た。しかし、前節で作ったステッパではコンテキストの情報が非関数化されて
