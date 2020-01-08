@@ -14,6 +14,7 @@
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{theorem}
+\usepackage[dvipdfmx]{color}
 % \usepackage{epsf}
 
 % 自分で定義したマクロファイル
@@ -32,8 +33,8 @@
 %
 % 以下を書き換えてタイトル部に
 %------------------------------------------------------------
-\title{{\gt{タイトル}}}
-\author{{\gt 名前~~~~(指導教員：浅井 健一)}}
+\title{{\gt{代数的効果を含むプログラムのステップ実行}}}
+\author{\gt{理学専攻・情報科学コース 1840669 古川 つきの~~~~(指導教員：浅井 健一)}}
 %------------------------------------------------------------
 
 %
@@ -42,6 +43,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% ページ数を非表示にしたくて足した
+% https://medemanabu.net/latex/pagestyle-empty/
+\pagestyle{empty}
+
 %
 % 以下の3行は変更しない. 
 %
@@ -52,351 +58,26 @@
 %%%%%開始ページ数を設定する（この例では1)%%%%%%%%%%%
 \setcounter{page}{1}
 
+\thispagestyle{empty}
+
 \setlength{\abovedisplayskip}{0pt}
 
 \input{intro}
-\input{stepper}
+
+\input{effects}
+
+\input{context}
+
+\input{transform}
+
 \input{lang}
-%------------------------------------------------------------
-\section{ラムダ式}\label{sec:lambda}
-%------------------------------------------------------------
-\texttt{macro.tex} に書いてあるような定義をあらかじめしておいて、
-それを使うのが良いです。
-\[
-\begin{array}{lrcl}
-       型 & t & := & \Int\ |\ \Arrow{t}{t} \\
-       項 & e & := & x\ |\ \Lam{x}{e}\ |\ \App{e}{e}\ |\
-                     \Shift{k}{e}\ |\ \Reset{e} \\
-\end{array}
-\]
 
-%------------------------------------------------------------
-\section{箇条書きの書き方など}\label{sec:kajogaki}
-%------------------------------------------------------------
-箇条書き
-\begin{itemize}
-       \item ひとつめ
-       \item ふたつめ
-       \item みっつめ
-\end{itemize}
-番号付き
-\begin{enumerate}
-       \item ひとつめ
-       \item ふたつめ
-       \item みっつめ
-\end{enumerate}
-見出し付き
-\begin{description}
-       \item[継続] その後の計算をさす。
-       \item[限定継続] 継続のうち、その範囲が限定されているもの。
-\end{description}
-
-%------------------------------------------------------------
-\section{コード}\label{sec:code}
-%------------------------------------------------------------
-コードを直接、書くには \texttt{verbatim} 環境が簡単です。
-\begin{verbatim}
-let rec fac n =
-  if n = 0 then 1 else n * fac (n - 1)
-\end{verbatim}
-\texttt{verbatim} 環境内で tex のコマンドを使いたいときは、
-\texttt{alltt} を \texttt{usepackage} して使います。
-上のコードは、どうも前後の文と間がきつすぎると思うときは、
-\texttt{quote} 環境に入れるというのはひとつの手です。
-\begin{quote}
-\begin{verbatim}
-let rec fib n =
-  if n < 2
-  then n
-  else fib (n - 1) + fib (n - 2)
-\end{verbatim}
-\end{quote}
-
-これらの環境はタイプライタフォントなので、横幅をとりすぎる傾向にありま
-す。なれてきたら、よりきれいにコードを書く方法を習得するのが良いかも知
-れません。
-
-%------------------------------------------------------------
-\section{参考文献}\label{sec:bunken}
-%------------------------------------------------------------
-bibtex を使うのが良いでしょう。
-\texttt{paper.bib} に型デバッガ \cite{TA2013} 関係の文献と
-限定継続 \cite{DF1989, DF1990} 関係の文献を入れておきました。
-また、本の例として
-アルゴリズミックデバッギング \cite{Shapiro1983} も入れました。
-
-%------------------------------------------------------------
-\section{定理}\label{sec:theorem}
-%------------------------------------------------------------
-\begin{definition}[CPS 変換 \cite{Plotkin1975}]
-\upshape % これを書くと定理の中身がイタリックではなくなる。
-項 $e$ の CPS 変換 $\CPS{e}$ は以下のように定義される。
-（中身は省略。）
-\end{definition}
-
-\begin{proposition}
-$e$ に型がつくなら、その部分式にも型がつく。
-\end{proposition}
-
-\begin{lemma}[代入補題 \cite{WF1994}]
-$\Judge{x:t_1}{e}{t}$ かつ $\Judge{}{v}{t_1}$ なら
-$\Judge{}{e[v/x]}{t}$ が成り立つ。
-\end{lemma}
-
-\begin{theorem}
-$e$ に型がついたら、$e$ の実行中に型エラーは起きない。
-\end{theorem}
-
-%------------------------------------------------------------
-\section{証明木}\label{sec:proof}
-%------------------------------------------------------------
-証明木の例です。judgement もマクロとして定義するのが良いです。
-\[
-\begin{array}{c}
-\infer[(\textsf{TVar})]
-      {\Judge{\Gamma}{x}{t}}
-      {\Gamma(x)=t}
-\qquad
-\infer[(\textsf{TLam})]
-      {\Judge{\Gamma}{\Lam{x}{e}}{\Arrow{t_1}{t_2}}}
-      {\Judge{\Gamma,x:t_1}{e}{t_2}} \\
-\ \\
-\infer[(\textsf{TApp})]
-      {\Judge{\Gamma}{\App{e_1}{e_2}}{t_1}}
-      {\Judge{\Gamma}{e_1}{\Arrow{t_2}{t_1}}
-      &\Judge{\Gamma}{e_2}{t_2}} \\
-\end{array}
-\]
-
-\section{長さ稼ぎ}
-あ
-
-い
-
-う
-
-え
-
-お
-
-か
-
-き
-
-く
-
-け
-
-こ
-
-さ
-
-し
-
-す
-
-せ
-
-そ
-
-た
-
-ち
-
-つ
-
-て
-
-と
-
-な
-
-に
-
-ぬ
-
-ね
-
-の
-
-は
-
-ひ
-
-ふ
-
-へ
-
-ほ
-
-ま
-
-み
-
-む
-
-め
-
-も
-
-や
-
-ゆ
-
-よ
-
-ら
-
-り
-
-る
-
-れ
-
-ろ
-
-わ
-
-を
-
-ん
-
-A
-
-B
-
-C
-
-D
-
-E
-
-F
-
-G
-
-H
-
-I
-
-J
-
-K
-
-L
-
-M
-
-N
-
-O
-
-P
-
-Q
-
-R
-
-S
-
-T
-
-U
-
-V
-
-W
-
-X
-
-Y
-
-Z
-
-a
-
-b
-
-c
-
-d
-
-e
-
-f
-
-g
-
-h
-
-i
-
-j
-
-k
-
-l
-
-m
-
-n
-
-o
-
-p
-
-q
-
-r
-
-s
-
-t
-
-u
-
-v
-
-w
-
-x
-
-y
-
-z
-
-0
-
-1
-
-2
-
-3
-
-4
-
-5
-
-6
-
-7
-
-8
-
-9
-
-
-%------------------------------------------------------------
-\section{まとめ}\label{sec:conclusion}
-%------------------------------------------------------------
-最後に、まとめと今後の課題などを書きます。
-このサンプルは１ページで終わっていますが、必ず２ページを埋めます。
-（２ページはすぐ埋まります。むしろすぐ足りなくなります。紙面が足りない
-場合、下のように参考文献は多少、小さくしても構いません。）
+\input{conclusion}
 
 \small % 紙面が足りない場合、参考文献は多少、小さくても良いことにする。
 \bibliographystyle{jplain}
-\bibliography{paper}
+%\bibliography{paper}
+\bibliography{stepper}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \end{document}

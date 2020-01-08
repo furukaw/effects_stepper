@@ -1,0 +1,46 @@
+\section{algebraic effects}
+\label{section:algebraic effects}
+
+algebraic effects は、例外や状態などの副作用を表現するためのプログラミング言語機能である。
+型無し $\lambda$ 計算に algebraic effects を足した言語を図 \ref{figure:effects} のように定義できる。
+
+\begin{figure}
+\begin{verbatim}
+v :=                   (値)
+     x                 変数
+   | fun x -> e        関数
+   | fun x => e        継続
+e :=                   (式)
+     v                 値
+   | e e               関数/継続適用
+   | op e              オペレーション呼出
+   | with h handle e   ハンドル
+h :=                   (ハンドラ)
+    {return x -> e;   正常終了処理の定義
+     op(x; k) -> e;   エフェクト定義(0個以上)
+     ...;
+     op(x; k) -> e}
+\end{verbatim}
+\caption{構文の定義}
+\label{figure:effects}
+\end{figure}
+
+「オペレーション」に引数を渡すとそのオペレーションの「エフェクト」が実行されるというのが algebraic effects の基本的な動作である。
+オペレーションのエフェクトは「ハンドラ」で定義することができ、
+使用するハンドラを変えることでオペレーションに別のエフェクトを持たせることができるのが特徴である。
+
+エフェクトの定義においては、オペレーションに渡された引数 \texttt{x} の他に「継続」を束縛した変数 \texttt{k} を使用することができる。
+継続とは、プログラム実行のある時点での残りの計算のことであり、
+例えば \texttt{1 + (2 + 4)} という式の \texttt{2 + 4}
+を計算している時点での継続は「今の計算の結果を 1 に足す」という計算である。
+特に、残りの計算の全てではなく一部のみの継続を限定継続という。
+
+algebraic effects のエフェクトで使用できる継続 \texttt{k} は
+オペレーション呼び出しをしたところから
+そのオペレーションを定義している with handle 文までの限定継続である。
+オペレーションが呼び出されたら、そのオペレーションを定義している with handle 文までの限定継続を変数 \texttt{k} に束縛する。
+そのため、algebraic effects では with handle 文までの限定継続をひとまとまりとして扱う。
+
+本研究では、algebraic effects に対する定義的なインタプリタを定義している。
+継続適用をインタプリタのメタ継続の適用によって実現するためにインタプリタが継続を持つ必要があるので、
+with handle 文の内部の実行を基本的にCPS(継続渡し形式)で実装した。

@@ -1,1 +1,1 @@
-paper.pdf : intro.tex lang.tex
+p.pdf : intro.tex transform.tex lang.tex p.tex effects.tex conclusion.tex context.tex

@@ -1,26 +1,17 @@
-\section{対象言語とインタプリタ}
+\section{他の言語への対応}
 \label{lang}
 
-本稿では、以下の定義で表される言語についてステッパを実装する方法を示す。
-\begin{quote}
-\begin{verbatim}
-(* 値 *)
-type v =
-    Var of string      (* x *)
-  | Num of int         (* n *)
-  | Fun of string * e  (* fun x -> e *)
-  | Handler of h       (* ハンドラ *)
-  | Cont of string * (cont_in -> cont_in)
-(* ハンドラ *)
-and h =
-  {return : (string * e) option;
-   ops : (string * string * string * e) list}
-(* 式 *)
-and e = Val of v          (* v *)
-      | App of e * e      (* e e *)
-      | Op of string * e  (* op e *)
-      | With of e * e (* with e handle e *)
-(* 継続 *)
-and cont_in = v -> a
-\end{verbatim}
-\end{quote}
+\ref{section:transform} 節と同様の変換によって、
+他のいくつかの言語に対するステッパの導出を試みた。
+型無し$\lambda$計算を対象言語とすると、
+コンテキストを区切るような制御が無いため、
+CPS インタプリタを非関数化するのみで全てのコンテキスト情報を保持することができ、
+ステッパが実装できた。
+他の例外処理などのための構文 try-with および shift/reset を含む言語を対象にすると、
+algebraic effects の場合と全く同じ手順でステッパを実装することができた。
+元のインタプリタが CPS でない場合は、最初に CPS 変換をして CPS インタプリタにしておく必要がある。
+
+今後の課題として、OCaml に algebraic effects を追加した構文を持つ
+Multicore OCaml に対応したステッパの実装を目指している。
+基本的な動作は我々が定義した言語のインタプリタと同様なので、
+インタプリタ関数を用意できれば変換によってステッパが導出できると考えている。
