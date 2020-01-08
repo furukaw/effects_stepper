@@ -1,8 +1,11 @@
+@comment{DrRacket のステッパ}
+@comment{
+  booktitle が European symposium on programming
+}
 @inproceedings{clements01,
   title = {Modeling an algebraic stepper},
   author = {Clements, John and Flatt, Matthew and Felleisen, Matthias},
-  booktitle = {European symposium on programming},
-  seriese = {ESOP '01},
+  series = {ESOP '01},
   pages = {320--334},
   year = {2001},
   organization = {Springer}
@@ -80,11 +83,13 @@
   publisher = {Elsevier}
 }
 
+@comment{
+  booktitle が Proceedings of the 1990 ACM Conference on Lisp and
+	  Functional Programming
+}
 @inproceedings{DF1990,
   title = {Abstracting Control},
   author = {Danvy, Olivier and Filinski, Andrzej},
-  booktitle = {Proceedings of the 1990 ACM Conference on Lisp and
-	  Functional Programming},
   series = {LFP '90},
   pages = {151--160},
   year = {1990},
@@ -133,9 +138,7 @@ note = {査読用に http://pllab.is.ocha.ac.jp/\~{}asai/tmp/paper.pdf から取
   author    = {Furukawa, Tsukino and Cong, Youyou and Asai, Kenichi},
   year      = {2019},
   title     = {Stepping {OCaml}},
-  booktitle = {{\rm Proceedings Seventh International Workshop on}
-               Trends in Functional Programming in Education,
-               {\rm Chalmers University, Gothenburg, Sweden, 14th June 2018}},
+  booktitle = {{TFPIE 2018}},
   series    = {Electronic Proceedings in Theoretical Computer Science},
   volume    = {295},
   pages     = {17-34},
@@ -183,7 +186,6 @@ isbn="978-3-030-02768-1"
 
 @inproceedings{e6cb0c3222794e48bf38cf44e46fe4aa,
 title = "Continuation passing style for effect handlers",
-abstract = "We present Continuation Passing Style (CPS) translations for Plotkin and Pretnar's effect handlers with Hillerstr{\"o}m and Lindley's row-typed fine-grain call-by-value calculus of effect handlers as the source language. CPS translations of handlers are interesting theoretically, to explain the semantics of handlers, and also offer a practical implementation technique that does not require special support in the target language's runtime.We begin with a first-order CPS translation into untyped lambda calculus which manages a stack of continuations and handlers as a curried sequence of arguments. We then refine the initial CPS translation first by uncurrying it to yield a properly tail-recursive translation and second by making it higher-order in order to contract administrative redexes at translation time. We prove that the higher-order CPS translation simulates effect handler reduction. We have implemented the higher-order CPS translation as a JavaScript backend for the Links programming language.",
 keywords = "effect handlers, delimited control, continuation passing system, CPS, algebraic effects",
 author = "Daniel Hillerstr{\"o}m and Sam Lindley and Robert Atkey and KC Sivaramakrishnan",
 year = "2017",
@@ -249,7 +251,7 @@ abstract = "This paper examines the old question of the relationship between ISW
 @Article{Reynolds1998,
 author="Reynolds, John C.",
 title="Definitional Interpreters for Higher-Order Programming Languages",
-journal="Higher-Order and Symbolic Computation",
+journal="HOSC",
 year="1998",
 month="Dec",
 day="01",
@@ -266,10 +268,7 @@ url="https://doi.org/10.1023/A:1010027404223"
   author    = {Whitington, John and Ridge, Tom},
   year      = {2019},
   title     = {Direct Interpretation of Functional Programs for Debugging},
-  editor    = {Lindley, Sam and Scherer, Gabriel},
-  booktitle = {{\rm Proceedings}
-               ML Family  / OCaml Users and Developers workshops,
-               {\rm Oxford, UK, 7th September 2017}},
+  booktitle = {ML 2017},
   series    = {Electronic Proceedings in Theoretical Computer Science},
   volume    = {294},
   pages     = {41-73},
