@@ -41,6 +41,6 @@ algebraic effects のエフェクトで使用できる継続 \texttt{k} は
 オペレーションが呼び出されたら，そのオペレーションを定義している with handle 文までの限定継続を変数 \texttt{k} に束縛する．
 そのため，algebraic effects では with handle 文までの限定継続をひとまとまりとして扱う．
 
-本研究では，algebraic effects に対する定義的なインタプリタを定義している．
+本研究では，まず algebraic effects を定義するインタプリタを与えている．
 継続適用をインタプリタのメタ継続の適用によって実現するためにインタプリタが継続を持つ必要があるので，
 with handle 文の内部の実行を基本的にCPS (継続渡し形式) で実装した．
