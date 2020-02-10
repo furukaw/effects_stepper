@@ -272,10 +272,10 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 %% 継続を単に \texttt{k'} として、それを適用する際に
 %% \texttt{k (cont\_value v2)} とすれば良い。
 
-これまで、algebraic effect handlers の意味論は small-step のもの
+これまで、algebraic effect handlers の意味論は small step のもの
 \cite{10.1145/2500365.2500590, PRETNAR201519}
 以外には
-CPS で書かれた big-step のもの
+CPS で書かれた big step のもの
 \cite{e6cb0c3222794e48bf38cf44e46fe4aa}
 が提示されてきたが、この意味論はすでに部分式に名前が与えられている
 （A-正規形になっている）ことを仮定している上に、毎回、捕捉する継続を
