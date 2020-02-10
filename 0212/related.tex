@@ -12,6 +12,12 @@
 ている。一方、Whitington と Ridge \cite{EPTCS294.3} は small step のイ
 ンタプリタを直接、書くことで OCaml に対するステッパを実装した。しか
 し、以上のステッパはいずれも algebraic effect handlers には対応していない。
+Danvy ら \cite{10.1145/1411204.1411206} は
+big step インタプリタにCPS変換と非関数化を施すことで抽象機械が導出できることを
+示した。本研究では同様の方法によってコンテキストの情報を得たが、
+algebraic effects handlers は限定継続を扱うため継続が区切られており、
+\texttt{handle} で区切られた内部の継続と全体の継続それぞれについて変換をする必要があったため、2度この変換を行った
+(\texttt{handle} の内部については、もともと CPS になっているインタプリタを用いたためCPS変換は不要だった)。
 
 algebraic effect handlers に対する意味論は、これまで small step の
 意味論 \cite{10.1145/2500365.2500590}
@@ -22,9 +28,8 @@ algebraic effect handlers に対する意味論は、これまで small step の
 を制限しておらず、また継続も普通の一引数関数となっている。
 
 上記以外の algebraic effect handlers に関する研究としては、ハンドラの挙動が異
-なる shallow ハンドラの研究 \cite{10.1007/978-3-030-02768-1_22} や
-algebraic effect handlers を含むプログラムに関する論理関係を
-定義する研究 \cite{10.1145/3158096} などがあげられる。本論文で扱ってい
+なる shallow ハンドラの研究 \cite{10.1007/978-3-030-02768-1_22}
+などがあげられる。本論文で扱ってい
 るハンドラは従来の deep ハンドラである。shallow ハンドラにも対応できると
 考えているが、これは今後の課題である。
 
