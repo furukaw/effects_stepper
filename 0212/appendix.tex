@@ -102,3 +102,27 @@ let interpreter (e : e) : a = eval e FId GId
 \caption{CPS インタプリタを非関数化して CPS 変換して非関数化したプログラム}
 \label{figure:4defun}
 \end{figure}
+
+\begin{figure}
+% 5memo/syntax.ml より
+% FApp1 の引数を交換、plug_all の match の中を字下げした
+\begin{verbatim}
+(* handle 節内の式を再構成して返す *)
+let rec plug_in_handle (e : e) (k : k) : e = match k with
+  | FId -> e
+  | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
+  | FApp1 (k, v2) -> plug_in_handle (App (e, Val v2)) k
+  | FOp (name, k) -> plug_in_handle (Op (name, e)) k
+
+(* プログラムを再構成して返す *)
+let rec plug_all (e : e) ((k, k2) : cont) : e =
+  let e_in_handle = plug_in_handle e k in  (* handle 節内の式 *)
+  match k2 with
+    | GId -> e_in_handle  (* ハンドルが無い場合は handle 節内の式をそのまま返す *)
+    | GHandle (h, k, k2) ->  (* ハンドルがある場合はさらに外に (k, k2) がある *)
+      let e_handle = With (h, e_in_handle) in  (*with h handle (handle節内の式)*)
+      plug_all e_handle (k, k2)
+\end{verbatim}
+\caption{式とコンテキスト情報を受け取ってプログラムを再構成して返す関数}
+\label{figure:plug_all}
+\end{figure}
