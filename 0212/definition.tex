@@ -1,15 +1,15 @@
 %\section{言語とインタプリタの定義}
-\section{algebraic effects とインタプリタの定義}
+\section{algebraic effect handlers とインタプリタの定義}
 \label{section:definition}
 
-この節では、algebraic effects を導入した後、
-型無し$\lambda$計算と algebraic effects からなる言語を示し、
+この節では、algebraic effect handlers を導入した後、
+型無し$\lambda$計算と algebraic effect handlers からなる言語を示し、
 そのインタプリタを定義する。
 
-\subsection{algebraic effects}
-\label{subsection:algebraic effects}
+\subsection{algebraic effect handlers}
+\label{subsection:algebraic effect handlers}
 
-algebraic effects は、例外や状態などの副作用を表現するための一般的な枠
+algebraic effect handlers は、例外や状態などの副作用を表現するための一般的な枠
 組で、副作用を起こす部分（オペレーション呼び出し）
 と処理する部分（ハンドラ）からなる \cite{PRETNAR201519}。
 特徴は、副作用の意味がそれを処理するハンドラ部分で決まるところである。
@@ -55,18 +55,18 @@ handle 10 + op(3)
 もとの計算である \texttt{10 + [.]}\ が再開され、
 全体として 14 が返ることになる。
 
-algebraic effects の特徴は、オペレーション呼び出しの意味がハンドラで決
+algebraic effect handlers の特徴は、オペレーション呼び出しの意味がハンドラで決
 まる部分にある。\texttt{op(3)} とした時点ではこの処理の内容は未定だ
 が、ハンドラ部分に \texttt{k (x + 1)} と書かれているため、
 結果として \texttt{op} は 1 を加えるような作用だったことになる。
 
 \subsection{構文の定義}
 \label{subsection:syntax}
-型無し$\lambda$計算と algebraic effects からなる対象言語を図 \ref{figure:abstract_syntax}の \texttt{e} と定義する。
+型無し$\lambda$計算と algebraic effect handlers からなる対象言語を図 \ref{figure:abstract_syntax}の \texttt{e} と定義する。
 \texttt{h} のオペレーション節に出てくる \texttt{op} たちは互いに
 全て異ならくてはいけない。
 
-%型無し$\lambda$計算と algebraic effects からなる対象言語を図\ref{figure:abstract_syntax}の \texttt{e} と定義する。ただし継続 \texttt{fun x => e} は入力プログラムに含まれることはなく、実行の過程で現れる。
+%型無し$\lambda$計算と algebraic effect handlers からなる対象言語を図\ref{figure:abstract_syntax}の \texttt{e} と定義する。ただし継続 \texttt{fun x => e} は入力プログラムに含まれることはなく、実行の過程で現れる。
 
 \begin{figure}[t]
 \begin{verbatim}
@@ -120,7 +120,7 @@ and a = Return of v               (* 値になった *)
 \label{figure:syntax}
 \end{figure}
 
-この節では、algebraic effects を含む言語に対する意味論を与える。
+この節では、algebraic effect handlers を含む言語に対する意味論を与える。
 オペレーション呼び出しにより非局所的に制御が移るので、
 意味論は CPS インタプリタを定義することで与える。
 対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
@@ -272,7 +272,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 %% 継続を単に \texttt{k'} として、それを適用する際に
 %% \texttt{k (cont\_value v2)} とすれば良い。
 
-これまで、algebraic effects の意味論は small-step のもの
+これまで、algebraic effect handlers の意味論は small-step のもの
 \cite{10.1145/2500365.2500590, PRETNAR201519}
 以外には
 CPS で書かれた big-step のもの
@@ -282,7 +282,7 @@ CPS で書かれた big-step のもの
 計算しているなど実装には必ずしも合ったものとは言えなかった。
 ここで示した CPS インタプリタは単純で、ハンドラの意味を的確に捉えて
 %いるのに加えて、deep ハンドラと shallow ハンドラの違いも簡潔に表現できて
-おり、algebraic effects の定義を与えるインタプリタ (definitional
+おり、algebraic effect handlers の定義を与えるインタプリタ (definitional
 intepreter) と捉えて良いのではないかと考えている。
 
 %関数 \texttt{apply\_handler} の下から 5 行目に \texttt{(fun k'' -> fun v -> ...)} という関数がある。このうち \texttt{fun v -> ...} の部分は \texttt{k'} の後に \texttt{k''} を行うという継続であり、継続を実際に適用する際に引数に適用するものである。\texttt{k''} はこの継続を適用する時点で関数 \texttt{eval} が引数に保持している継続である。なぜ \texttt{k''} をとる関数になっているのかというと、例えば \texttt{(fun a -> a) ((fun y => with h handle (fun b -> b) y) 1)} の継続の適用をするとき、継続値は「受け取った値に \texttt{fun b -> b} を適用してそれをハンドラ \texttt{h} で処理する」というメタ継続を持っているが、さらにその後には「そこに\texttt{fun a -> a}を適用する」という継続を合成したいのに、継続を capture する時点では \texttt{fun a -> a} についての情報は見えないからである。関数 \texttt{eval} 内の \texttt{(k' k) v2} という部分で、この関数 \texttt{(fun k'' -> fun v -> ...)} に継続の適用の後の継続 \texttt{k} を渡すことで合成された継続を作り、そこに値を渡している。

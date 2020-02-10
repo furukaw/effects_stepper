@@ -249,7 +249,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 わかる。
 
 得られたコンテキストはごく自然なものだが、ハンドラの入る位置などは必ず
-しも自明ではない。プログラム変換を使うことで、algebraic effects の入っ
+しも自明ではない。プログラム変換を使うことで、algebraic effect handlers の入っ
 た体系に沿ったコンテキストのデータ型が機械的に得られたことには一定の価
 値があると考えられる。
 
@@ -379,7 +379,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 
 \subsection{CPSインタプリタに基づいたステッパ}
 
-前節で algebraic effects を持つ言語に対するステッパを作ることができ
+前節で algebraic effect handlers を持つ言語に対するステッパを作ることができ
 た。しかし、前節で作ったステッパではコンテキストの情報が非関数化されて
 いた。また、CPS 変換されているためふたつの継続を扱っており、
 もともとの CPS インタプリタとは形がかなり異なったものとなっている。
@@ -400,7 +400,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 このインタプリタは、もとの CPS インタプリタにコンテキストの情報として
 引数 \texttt{c} と \texttt{c2} を加え、簡約ごとにプログラムを再構成
 し、ステップ表示するようにしたものである。
-一度、必要なコンテキストの情報が特定されると、algebraic effects のよう
+一度、必要なコンテキストの情報が特定されると、algebraic effect handlers のよう
 に非自明な言語構文が入っていても、直接、ステッパを作ることができるよう
 になる。
 

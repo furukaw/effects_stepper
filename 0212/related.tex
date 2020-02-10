@@ -11,9 +11,9 @@
 以上のステッパはいずれも big-step のインタプリタに手を加える形で作られ
 ている。一方、Whitington と Ridge \cite{EPTCS294.3} は small-step のイ
 ンタプリタを直接、書くことで OCaml に対するステッパを実装した。しか
-し、以上のステッパはいずれも algebraic effects には対応していない。
+し、以上のステッパはいずれも algebraic effect handlers には対応していない。
 
-algebraic effects に対する意味論は、これまで small-step の
+algebraic effect handlers に対する意味論は、これまで small-step の
 意味論 \cite{10.1145/2500365.2500590}
 あるいは CPS による意味論 \cite{e6cb0c3222794e48bf38cf44e46fe4aa} が
 与えられて来た。しかし、後者は入力言語が A-正規形であることを仮定して
@@ -21,9 +21,9 @@ algebraic effects に対する意味論は、これまで small-step の
 タプリタにはなっていない。本論文で与えた CPS インタプリタは、入力言語
 を制限しておらず、また継続も普通の一引数関数となっている。
 
-上記以外の algebraic effects に関する研究としては、ハンドラの挙動が異
+上記以外の algebraic effect handlers に関する研究としては、ハンドラの挙動が異
 なる shallow ハンドラの研究 \cite{10.1007/978-3-030-02768-1_22} や
-algebraic effects を含むプログラムに関する論理関係を
+algebraic effect handlers を含むプログラムに関する論理関係を
 定義する研究 \cite{10.1145/3158096} などがあげられる。本論文で扱ってい
 るハンドラは従来の deep ハンドラである。shallow ハンドラにも対応できると
 考えているが、これは今後の課題である。

@@ -162,7 +162,7 @@ month = feb,
  booktitle = {Proceedings of the 18th ACM SIGPLAN International Conference on Functional Programming},
  pages = {145--158},
  numpages = {14},
- keywords = {haskell, modularity, monads, algebraic effects, continuations, effect handlers, effect typing},
+ keywords = {haskell, modularity, monads, algebraic effect handlers, continuations, effect handlers, effect typing},
  location = {Boston, Massachusetts, USA},
  series = {ICFP '13}
 }
@@ -184,7 +184,7 @@ isbn="978-3-030-02768-1"
 @inproceedings{e6cb0c3222794e48bf38cf44e46fe4aa,
 title = "Continuation passing style for effect handlers",
 abstract = "We present Continuation Passing Style (CPS) translations for Plotkin and Pretnar's effect handlers with Hillerstr{\"o}m and Lindley's row-typed fine-grain call-by-value calculus of effect handlers as the source language. CPS translations of handlers are interesting theoretically, to explain the semantics of handlers, and also offer a practical implementation technique that does not require special support in the target language's runtime.We begin with a first-order CPS translation into untyped lambda calculus which manages a stack of continuations and handlers as a curried sequence of arguments. We then refine the initial CPS translation first by uncurrying it to yield a properly tail-recursive translation and second by making it higher-order in order to contract administrative redexes at translation time. We prove that the higher-order CPS translation simulates effect handler reduction. We have implemented the higher-order CPS translation as a JavaScript backend for the Links programming language.",
-keywords = "effect handlers, delimited control, continuation passing system, CPS, algebraic effects",
+keywords = "effect handlers, delimited control, continuation passing system, CPS, algebraic effect handlers",
 author = "Daniel Hillerstr{\"o}m and Sam Lindley and Robert Atkey and KC Sivaramakrishnan",
 year = "2017",
 month = "9",
@@ -199,7 +199,7 @@ booktitle = "2nd International Conference on Formal Structures for Computation a
 
 @article{10.1145/3158096,
 author = {Biernacki, Dariusz and Pir\'{o}g, Maciej and Polesiuk, Piotr and Sieczkowski, Filip},
-title = {Handle with Care: Relational Interpretation of Algebraic Effects and Handlers},
+title = {Handle with Care: Relational Interpretation of algebraic effect handlers and Handlers},
 year = {2017},
 issue_date = {December 2017},
 publisher = {Association for Computing Machinery},
@@ -216,7 +216,7 @@ keywords = {row polymorphism, algebraic effect, logical relation}
 }
 
 @article{PRETNAR201519,
-title = "An Introduction to Algebraic Effects and Handlers. Invited tutorial paper",
+title = "An Introduction to algebraic effect handlers and Handlers. Invited tutorial paper",
 journal = "Electronic Notes in Theoretical Computer Science",
 volume = "319",
 pages = "19--35",
@@ -226,8 +226,8 @@ issn = "1571-0661",
 doi = "https://doi.org/10.1016/j.entcs.2015.12.003",
 url = "http://www.sciencedirect.com/science/article/pii/S1571066115000705",
 author = "Matija Pretnar",
-keywords = "algebraic effects, handlers, effect system, semantics, logic, tutorial",
-abstract = "This paper is a tutorial on algebraic effects and handlers. In it, we explain what algebraic effects are, give ample examples to explain how handlers work, define an operational semantics and a type & effect system, show how one can reason about effects, and give pointers for further reading."
+keywords = "algebraic effect handlers, handlers, effect system, semantics, logic, tutorial",
+abstract = "This paper is a tutorial on algebraic effect handlers and handlers. In it, we explain what algebraic effect handlers are, give ample examples to explain how handlers work, define an operational semantics and a type & effect system, show how one can reason about effects, and give pointers for further reading."
 }
 
 @comment{CPS変換}
