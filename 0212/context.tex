@@ -5,8 +5,7 @@
 ステッパは small step による実行と同じなので、small step のインタプリ
 タを書けば実装できる。実際、Whitington \& Ridge \cite{EPTCS294.3} は small step のインタプリ
 タを書くことで OCaml に対するステッパを実装している。
-しかし、small step のインタプリタをメンテナンスするのは簡単ではない。
-また、ステップ実行中に関数呼び出し単位でスキップする機能をつけようと思
+しかし、ステップ実行中に関数呼び出し単位でスキップする機能をつけようと思
 うとインタプリタは big step で書かれていた方が都合が良い。そこで、我々
 の過去の研究 \cite{FCA19} では、big step のインタプリタを元にして
 ステッパを作成している。ここでも、そのアプローチをとる。
@@ -16,6 +15,10 @@
 関数 \texttt{subst :\ e -> (string * v) list -> e} は代入関数であり、
 \texttt{subst e [(x, v)]} は式 \texttt{e} の中の
 全ての変数 \texttt{x} を値 \texttt{v} に置換した式を返す。
+環境を使わず代入に基づくインタプリタを用いるのは
+ステップ表示において環境を表示するのではなく $\beta$ 簡約をして見せるためであり、
+環境を用いたインタプリタで実装する場合にはステップ出力のたびに
+出力プログラム中の変数に値を代入すればよい。
 
 %ステッパはインタプリタにステップ出力機能が加わったものなので、通常のインタプリタ関数に書き加えることで実装できる。図 \ref{figure:lambda} に OCaml による型無し$\lambda$計算の定義とインタプリタの実装を示す。関数 \texttt{subst : e -> (string * v) list -> e} は代入関数であり、\texttt{subst e [(x, v)]} は式 \texttt{e} の中の全ての変数 \texttt{x} を値 \texttt{v} に置換した式を返す。
 
@@ -73,14 +76,14 @@ let rec eval (exp : e) : v = match exp with
 (* コンテキスト *)
 type c = CId             (* [.] *)
        | CApp2 of e * c  (* [e [.]] *)
-       | CApp1 of v * c  (* [[.] v] *)
+       | CApp1 of c * v  (* [[.] v] *)
 
 (* 出力しながら再帰的に実行 *)
 let rec eval (exp : e) (c : c) : v = match exp with
   | Val (v) -> v
   | App (e1, e2) ->
     let v2 = eval e2 (CApp2 (e1, c)) in  (* コンテキストを1層深くする *)
-    let v1 = eval e1 (CApp1 (v2, c)) in  (* コンテキストを1層深くする *)
+    let v1 = eval e1 (CApp1 (c, v2)) in  (* コンテキストを1層深くする *)
     let redex = App (Val v1, Val v2) in
     let reduct = match v1 with
       | Fun (x, e) -> subst e [(x, v2)]
@@ -100,7 +103,7 @@ let stepper (exp : e) = eval exp CId
 を再構成して出力することが可能になる。ここで、コンテキストを表すデータ
 型は、評価文脈そのものになっていることに気がつく。評価文脈のデータ型は、
 big step のインタプリタを CPS 変換し、非関数化すると機械的に得られるこ
-とが知られている。これは、我々が手動で定義したコンテキストのデータは、
+とが知られている \cite{AK2010, 10.1145/1411204.1411206}。これは、我々が手動で定義したコンテキストのデータは、
 機械的に導出できることを示唆している。
 
 $\lambda$計算に対するステッパであれば、手動でコンテキストの型を定義す
