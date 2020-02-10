@@ -6,8 +6,6 @@
 換（非関数化と CPS 変換）をかけることで、コンテキストを明示的に保持する
 インタプリタを得て、そこからステッパを作成する方法を示す。
 
-%本節では、\ref{section:definition}節で定義したインタプリタ(図\ref{figure:1cps})を変換することで、コンテキストの情報を保持するインタプリタを得る方法を示す。用いるプログラム変換は非関数化とCPS変換の２種類である。これらの変換はプログラムの動作を変えないので、変換の結果得られるインタプリタと図\ref{figure:1cps}のインタプリタは、同じ引数 \texttt{e} に対して同じ値を返す。
-
 \subsection{非関数化}
 \label{section:2defun}
 
@@ -26,7 +24,6 @@
 具体的に図\ref{figure:1cps}のプログラムの継続 \texttt{k} 型の$\lambda$式を
 非関数化するには次のようにする。結果は図 \ref{figure:k_2defun}と図 \ref{figure:2defun}のようになる。
 
-%まず、図\ref{figure:1cps}のプログラムの \texttt{k} 型の$\lambda$式を非関数化する。非関数化は以下の手順によって行われる。
 \begin{enumerate}
 \item 継続を表す$\lambda$式をコンストラクタに置き換える。その際、$\lambda$式内の自由変数はコンストラクタの引数にする。
 その結果、得られるデータ構造は図 \ref{figure:k_2defun}のようになる。
@@ -37,15 +34,13 @@
 \item $\lambda$式を呼び出す部分を、apply 関数にコンストラクタと引数を渡すように変更する。
 \end{enumerate}
 
-%図\ref{figure:1cps}のインタプリタの \texttt{k} 型すなわち \texttt{v -> a} 型の$\lambda$式を非関数化すると、型 \texttt{k} の定義は図 \ref{figure:k_2defun} のようにヴァリアント型になり、インタプリタは図\ref{figure:2defun}に書き換わる。
-
 \begin{figure}
   % code/2defun/syntax.ml より
 \begin{verbatim}
 (* handle 内の継続 *)
 type k = FId                 (* [.] *)
        | FApp2 of e * k      (* [e [.]] *)
-       | FApp1 of v * k      (* [[.] v] *)
+       | FApp1 of k * v      (* [[.] v] *)
        | FOp of string * k   (* [op [.]] *)
 \end{verbatim}
 \caption{非関数化後の継続の型}
@@ -67,8 +62,8 @@ let rec eval (exp : e) (k : k) : a = match exp with
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) : a = match k with
   | FId -> Return v  (* 空の継続、そのまま値を返す *)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k))
-  | FApp1 (v2, k) -> let v1 = v in
+  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (k, v2))
+  | FApp1 (k, v2) -> let v1 = v in
     (match v1 with
       | Fun (x, e) ->
         let reduct = subst e [(x, v2)] in
@@ -89,28 +84,6 @@ let interpreter (e : e) : a = eval e FId
 \label{figure:2defun}
 \end{figure}
 
-%\begin{figure}
-%  % code/3cps/syntax.ml より
-%\begin{verbatim}
-%(* 値 *)
-%type v = ...
-%       | Cont of (k -> v -> k2 -> a)  (* 継続 *)
-%(* handle 内の実行結果 *)
-%and a = Return of v                            (* 値になった *)
-%      | OpCall of string * v * (v -> k2 -> a)  (* オペレーションが呼び出された *)
-%(* handle 内の限定継続 *)
-%and k = FId                (* [.] *)
-%      | FApp2 of e * k     (* [e [.]] *)
-%      | FApp1 of v * k     (* [[.] v] *)
-%      | FOp of string * k  (* [op [.]] *)
-%(* 全体のメタ継続 *)
-%and k2 = a -> a
-%\end{verbatim}
-%\caption{非関数化とCPS変換をした後の継続の型}
-%\label{figure:k_3cps}
-%\end{figure}
-
-
 非関数化した後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
 てオペレーション呼び出しの引数を実行するフレーム \texttt{FOp} が加わっ
 ていることがわかる。これが、ハンドラ内の実行のコンテキスト情報である。
@@ -129,22 +102,6 @@ let interpreter (e : e) : a = eval e FId
 ム全体のコンテキストを得るためには、このインタプリタに対して
 もう一度 CPS 変換と非関数化を施し、純粋な CPS 形式にする必要がある。
 
-%非関数化したことで継続 \texttt{k} がコンストラクタとして表されるようになったので、継続の構造を参照することや、継続を部分的に書き換えることが可能になった。
-%具体的な \texttt{k} の構造の例を示す。図 \ref{figure:2defun} の
-%% 関数 \texttt{stepper} に入力プログラム
-%% \texttt{((fun a -> a) (with handler \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) (a (fun c -> c))) (fun d -> d)))}
-%% を表す構文木を渡して実行を始めた場合
-%% \texttt{(a (fun c -> c))} を関数 \texttt{eval}
-%% に渡して実行を始める際の継続は
-%% \texttt{FApp2 (Fun ("b", Var "b"), FApp1 (Fun ("d", Var "d")))}
-%% である。これは式 \texttt{(a (fun c -> c))} のコンテキスト
-%% \texttt{((fun a -> a) (with \{return x -> x; a(x; k) -> x\} handle ((fun b -> b) [.]) (fun d -> d)))}
-%% のうち、\texttt{handle} の内側に対応している。\texttt{handle}
-%% から外側が継続に含まれないのは、関数 \texttt{eval} で
-%% \texttt{with h handle e} の \texttt{e}
-%% の実行の再帰呼び出し時に初期継続を表す \texttt{FId} を渡しているためである。
-%% コンテキスト全体に対応した継続を得るために、この後の変換をさらに施す。
-
 \subsection{CPS 変換}
 \label{subsection:3cps}
 
@@ -155,7 +112,6 @@ let interpreter (e : e) : a = eval e FId
 す。
 この変換によって現れる継続は \texttt{a -> a} 型である。この型
 \texttt{a -> a} の名前を \texttt{k2} とする。
-%図\ref{figure:2defun} では、末尾再帰でない再帰呼び出しの際に継続が初期化されてしまうせいでコンテキスト全体に対応する情報が継続に含まれなかったので、全ての継続を引数に持つようにするため、さらに CPS 変換を施す。この変換によって現れる継続は \texttt{a -> a} 型である。この型 \texttt{a -> a} の名前を \texttt{k2} とする。
 変換したプログラムは付録の図 \ref{figure:3cps} に示す。
 
 このプログラムは、図 \ref{figure:2defun}のプログラムを機械的に CPS 変
@@ -175,8 +131,6 @@ CPS 変換ですべてのコンテキスト情報がふたつの継続に集約�
 非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、
 インタプリタは付録の図 \ref{figure:4defun} に変換される。
 
-%CPS 変換したことにより新たに現れた \texttt{a -> a} 型の匿名関数を非関数化する。非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、ステッパ関数は図 \ref{figure:4defun} に変換される。
-
 \begin{figure}
   % code/4defun/syntax.ml より
 \begin{verbatim}
@@ -194,8 +148,8 @@ type k2 = GId
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> apply_out k2 (Return v)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
-  | FApp1 (v2, k) -> let v1 = v in (match v1 with
+  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (k, v2)) k2
+  | FApp1 (k, v2) -> let v1 = v in (match v1 with
      | Fun (x, e) ->
        let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
        let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
@@ -264,7 +218,6 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler}
 である。
 (他の関数は簡約している部分が無いので図 \ref{figure:4defun} と同じになる。)
-%\ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後のプログラムを出力するように、図\ref{figure:4defun} のインタプリタの簡約が起こる部分に副作用を足すとステッパが得られる。図\ref{figure:5memo} が副作用を足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler} であり、他の関数は簡約している部分が無いので図 \ref{figure:4defun} と変わらない。
 
 ここで関数 \texttt{memo :\ e -> e -> (k * k2) -> unit} は、簡約基とその簡約後の式と簡約時のコンテキストを受け取って、簡約前のプログラムと簡約後のプログラムをそれぞれ再構成して出力する。
 
@@ -303,7 +256,7 @@ and k = v -> c2 -> a
 (* handle 内のコンテキスト *)
 and c = FId                (* [.] *)
       | FApp2 of e * c     (* [e [.]] *)
-      | FApp1 of v * c     (* [[.] v] *)
+      | FApp1 of c * v     (* [[.] v] *)
       | FOp of string * c  (* [op [.]] *)
 (* 全体のコンテキスト *)
 and c2 = GId
@@ -313,18 +266,6 @@ and c2 = GId
 \label{figure:k_6cps}
 \end{figure}
 
-%ステップ表示では継続値の内容も見えるようにしたいので、継続を文字列で表す必要がある。ここでは継続を関数 \texttt{fun x -> e} のように \texttt{fun x => e} と表すこととする。すると各継続が仮引数名を持つ必要があるので構文木に追加する（図\ref{figure:v_5memo}）。新しい継続値を作る時に、プログラム中で使われていない変数名を生成する関数 \texttt{gen\_var\_name} を利用して仮引数を定めている。
-
-%\begin{figure}
-%\begin{verbatim}
-%type v = Var of string
-%       | Fun of string * e
-%       | Cont of e * (k -> k)
-%\end{verbatim}
-%\caption{継続を文字列で表すために変更した値の型}
-%\label{figure:v_5memo}
-%\end{figure}
-
 \begin{figure}
   % code/6cps/eval.ml より
   % 2マスずつインデントした
@@ -333,7 +274,7 @@ and c2 = GId
 let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
   | Val (v) -> k v c2
   | App (e1, e2) -> eval e2 (FApp2 (e1, c), (fun v2 c2 ->
-    eval e1 (FApp1 (v2, c), (fun v1 c2 -> match v1 with
+    eval e1 (FApp1 (c, v2), (fun v1 c2 -> match v1 with
       | Fun (x, e) ->
         let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
         let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
@@ -403,10 +344,3 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 一度、必要なコンテキストの情報が特定されると、algebraic effect handlers のよう
 に非自明な言語構文が入っていても、直接、ステッパを作ることができるよう
 になる。
-
-%図 \ref{figure:5memo} のプログラムに主に以下を施すと図 \ref{figure:6cps} になった。
-%\begin{itemize}
-%\item \texttt{k} 型のコンストラクタを \texttt{c} 型にして、\texttt{k} 型は \texttt{v -> c2 -> a} とする
-%\item \texttt{k} 型だった引数を（多分もれなく）、対応するメタ継続関数とコンストラクタのペア(\texttt{c * k} 型) に置き換える。
-%\item DS 変換
-%\end{itemize}
