@@ -1,0 +1,28 @@
+\section{他の言語への対応}
+\label{section:languages}
+
+\ref{section:definition} 節で示した algebraic effects を含む言語の CPS インタプリタをステッパにするには、非関数化、CPS変換、非関数化が必要だったが、他のいくつかの言語についても同様にインタプリタを変換することでステッパを導出することを試みた。それぞれの言語のステッパ導出について説明する。
+
+
+\subsection{型無し$\lambda$計算}
+\label{subsection:lambda}
+
+型無し$\lambda$計算の DS インタプリタは、CPS変換して非関数化したら全てのコンテキストを引数に保持するインタプリタになり、出力関数を入れるのみでステッパを作ることができた。これは、継続を区切って一部を捨てたり束縛したりするという操作が無いためである。
+
+
+\subsection{try-with}
+\label{subsection:try_with}
+
+try-with は、algebraic effects が限定継続を変数に束縛するのと違って、例外が起こされたときに限定継続を捨てるという機能である。よって継続を表す値は現れないので、インタプリタを CPS で書く必要は無い。Direct style でインタプリタを書いた場合、最初にCPS変換をすることで、CPSインタプリタと同様の変換によってステッパが導出できた。最初からCPSインタプリタを書いていれば \ref{section:transform}節と同様の手順になる。
+
+
+\subsection{shift/reset}
+\label{subsection:shift/reset}
+
+shift/reset は algebraic effects と同様に限定継続を変数に束縛して利用することができる機能である。\ref{section:transform} 節で行ったのと全く同様に、CPS インタプリタを非関数化、CPS変換、非関数化したらコンテキストが表れ、ステッパが得られた。
+
+
+\subsection{Multicore OCaml}
+\label{subsection:multicore_ocaml}
+
+Multicore OCaml は、OCaml の構文に algebraic effects を追加した構文を持つ。我々は \ref{section:transform} 節で得られたステッパをもとにして、Multicore OCaml の algebraic effects を含む一部の構文を対象にしたステッパの実装を目指している。Multicore OCaml の「エフェクト」は \ref{section:definition} 節で定義した言語の algebraic effects のオペレーションとほとんど同じものであり、継続が one-shot であることを除いて簡約のされかたは \ref{section:definition} 節で定めた言語のインタプリタと同様なので、インタプリタ関数を用意できれば変換によってステッパが導出できると考えられる。
