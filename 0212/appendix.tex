@@ -88,14 +88,14 @@ and apply_out (k2 : k2) (a : a) : a = match k2 with
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v -> (match h with {return = (x, e)} ->
     let reduct = subst e [(x, v)] in eval reduct k k2)
-  | OpCall (name, v, va) ->
+  | OpCall (name, v, m) ->
     (match search_op name h with
       | None ->
         apply_out k2 (OpCall (name, v,
-          (fun v -> fun k2' -> va v (GHandle (h, k, k2')))))
+          (fun v -> fun k2' -> m v (GHandle (h, k, k2')))))
       | Some (x, y, e) ->
         let cont_value =
-          Cont (fun k'' -> fun v -> fun k2 -> va v (GHandle (h, k'', k2))) in
+          Cont (fun k'' -> fun v -> fun k2 -> m v (GHandle (h, k'', k2))) in
         let reduct = subst e [(x, v); (y, cont_value)] in
         eval reduct k k2)
 

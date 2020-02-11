@@ -16,7 +16,7 @@ and e = Val of v          (* v *)
 (* handle 内の継続 *)
 and k = FId
       | FApp2 of e * k
-      | FApp1 of v * k
+      | FApp1 of k * v
       | FOp of string * k
 
 and k2 = GId
