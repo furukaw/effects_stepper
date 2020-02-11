@@ -12,7 +12,7 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
 
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
-  | FId -> k2 (Return v)  (* handle 節の外の継続を適用 *)
+  | FId -> k2 (Return v)  (* 継続を適用 *)
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
@@ -23,7 +23,7 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
         (cont_value k) v2 k2
       | _ -> failwith "type error")
   | FOp (name, k) ->
-    k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))
+    k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))  (*継続を適用*)
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
@@ -34,7 +34,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | OpCall (name, v, m) ->
     (match search_op name h with
       | None ->
-        k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 外の継続を適用 *)
+        k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 継続を適用 *)
           m v (fun a' -> apply_handler k h a' k2'))))  (* GHandle に変換 *)
       | Some (x, y, e) ->
         let cont_value =
