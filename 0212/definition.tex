@@ -222,9 +222,6 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 
 \begin{enumerate}
 \item \texttt{handle} 節が値 \texttt{v}になった場合：ハンドラの \texttt{return} 節 \texttt{return x -> e} を参照して、\texttt{e[v/x]} を実行する。
-例えばプログラム \texttt{with \{return x -> (fun y -> y) x\} handle (fun z -> z)} を実行するとき、
-\texttt{e[v/x]} は具体的には \texttt{((fun y -> y) x)[(fun z -> z)/x]} となり、
-式 \texttt{(fun y -> y) (fun z -> z)} が関数 \texttt{eval} に渡される。
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, m)} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていなかった場合：
 さらに外側の \texttt{with handle} 文に処理を移すため、
 \texttt{handle} 節内の限定継続 \texttt{m} に、1つ外側の \texttt{handle} までの限定継続を合成した継続 \texttt{fun v -> ...} を作り、それを \texttt{OpCall (name, v, (fun v -> ...))} と返す
