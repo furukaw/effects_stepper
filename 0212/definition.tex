@@ -1,4 +1,3 @@
-%\section{言語とインタプリタの定義}
 \section{algebraic effect handlers とインタプリタの定義}
 \label{section:definition}
 
@@ -65,8 +64,6 @@ algebraic effect handlers の特徴は、オペレーション呼び出しの意
 \texttt{h} のオペレーション節に出てくる \texttt{op} は互いに
 全て異ならくてはいけない。
 
-%型無し$\lambda$計算と algebraic effect handlers からなる対象言語を図\ref{figure:abstract_syntax}の \texttt{e} と定義する。ただし継続 \texttt{fun x => e} は入力プログラムに含まれることはなく、実行の過程で現れる。
-
 \begin{figure}[t]
 \begin{verbatim}
 v  :=                                      (値)
@@ -84,12 +81,6 @@ h  :=                                      (ハンドラ)
 \caption{対象言語の構文}
 \label{figure:abstract_syntax}
 \end{figure}
-
-%\subsection{構文の定義}
-%\label{subsection:syntax}
-
-%対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
-%式の型 \texttt{e} で表されるものが対象言語のプログラムである。
 
 \subsection{CPS インタプリタによる意味論}
 \label{subsection:1cps}
@@ -127,10 +118,7 @@ and a = Return of v               (* 値になった *)
 また、\texttt{a} は \texttt{handle} 節内の式の実行が正常終了したのか
 オペレーション呼び出しだったのかを示す型である。
 
-%継続の型 \texttt{k} は、インタプリタ関数自体の継続を表す。
 
-%\subsection{CPS インタプリタ}
-%\label{subsection:1cps}
 
 図 \ref{figure:syntax} の言語に
 対する call-by-value かつ right-to-left のインタプリタを
@@ -202,7 +190,6 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \texttt{(fun x -> Return x)} を渡していて、これによって
 \texttt{handle} 節の実行に入るたびに渡す継続を初期化している。
 
-%このインタプリタは、\texttt{handle} 節内の実行については CPS になっており、メタ継続である \texttt{k} は「直近のハンドラまでの継続」である。関数 \texttt{eval} の下から2行目で再帰呼び出しの際に継続に \texttt{(fun x -> Return x)} を渡していて、これによって \texttt{handle} 節の実行に入るたびに渡す継続を初期化している。
 
 \texttt{handle} 節内を実行した結果を表すのが \texttt{a} 型である。
 \texttt{handle} 節内の実行は、オペレーション呼び出しが行われない限りは
