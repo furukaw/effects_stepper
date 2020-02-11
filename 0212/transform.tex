@@ -35,6 +35,7 @@
 \end{enumerate}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % code/2defun/syntax.ml より
 \begin{verbatim}
 (* handle 内の継続 *)
@@ -45,9 +46,11 @@ type k = FId                 (* [.] *)
 \end{verbatim}
 \caption{非関数化後の継続の型}
 \label{figure:k_2defun}
+\end{spacing}
 \end{figure}
 
 \begin{figure}[t]
+\begin{spacing}{0.8}
   % code/2defun/eval.ml より
   % インデントした
 \begin{verbatim}
@@ -82,6 +85,7 @@ let interpreter (e : e) : a = eval e FId
 \end{verbatim}
 \caption{CPS インタプリタを非関数化したプログラム}
 \label{figure:2defun}
+\end{spacing}
 \end{figure}
 
 非関数化した後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
@@ -133,6 +137,7 @@ CPS 変換ですべてのコンテキスト情報がふたつの継続に集約�
 インタプリタは付録の図 \ref{figure:4defun} に変換される。
 
 \begin{figure}[t]
+\begin{spacing}{0.8}
   % code/4defun/syntax.ml より
 \begin{verbatim}
 (* 全体のメタ継続 *)
@@ -141,9 +146,11 @@ type k2 = GId
 \end{verbatim}
 \caption{2回目の非関数化後の継続の型}
 \label{figure:k2_4defun}
+\end{spacing}
 \end{figure}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % インデントした
 \begin{verbatim}
 (* handle 節内の継続を適用する関数 *)
@@ -188,6 +195,7 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 \end{verbatim}
 \caption{変換の後、出力関数を足して得られるステッパ}
 \label{figure:5memo}
+\end{spacing}
 \end{figure}
 
 この非関数化によって、引数 \texttt{k} と引数 \texttt{k2} からコンテキ
@@ -233,6 +241,7 @@ algebraic effect handlers の入った体系の抽象機械で継続を表すデ
 コンテキストの結合を行なっている。
 
 \begin{figure}[t]
+\begin{spacing}{0.8}
   % code/5memo/eval.ml より
 \begin{verbatim}
 (* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
@@ -243,9 +252,11 @@ let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
 \end{verbatim}
 \caption{継続を外側に拡張する関数}
 \label{figure:compose}
+\end{spacing}
 \end{figure}
 
 \begin{figure}[t]
+\begin{spacing}{0.8}
   % code/6cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
@@ -267,9 +278,11 @@ and c2 = GId
 \end{verbatim}
 \caption{継続の情報を保持するための言語やコンテキストの定義}
 \label{figure:k_6cps}
+\end{spacing}
 \end{figure}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % code/6cps/eval.ml より
   % 2マスずつインデントした
 \begin{verbatim}
@@ -319,6 +332,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 \end{verbatim}
 \caption{変換の結果得られた、CPSインタプリタを基にしたステッパ}
 \label{figure:6cps}
+\end{spacing}
 \end{figure}
 
 \subsection{CPSインタプリタに基づいたステッパ}

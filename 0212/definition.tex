@@ -86,6 +86,7 @@ h  :=                                      (ハンドラ)
 \label{subsection:1cps}
 
 \begin{figure}[t]
+\begin{spacing}{0.8}
   % code/1cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
@@ -108,6 +109,7 @@ and a = Return of v               (* 値になった *)
 \end{verbatim}
 \caption{対象言語の定義}
 \label{figure:syntax}
+\end{spacing}
 \end{figure}
 
 この節では、algebraic effect handlers を含む言語に対する意味論を与える。
@@ -135,6 +137,7 @@ and a = Return of v               (* 値になった *)
 "y"))} を返す。
 
 \begin{figure}
+\begin{spacing}{0.8}
   % code/1cps/eval.ml より
   % 2マスずつインデントするように書き換えた
 \begin{verbatim}
@@ -181,6 +184,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \end{verbatim}
 \caption{継続渡し形式で書かれたインタプリタ}
 \label{figure:1cps}
+\end{spacing}
 \end{figure}
 
 このインタプリタは、\texttt{handle} 節内の実行については普通の CPS に

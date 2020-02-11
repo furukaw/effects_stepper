@@ -2,6 +2,7 @@
 \section{付録}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % code/3cps/eval.ml より
 \begin{verbatim}
 (* CPS インタプリタを非関数化して CPS 変換した関数 *)
@@ -50,9 +51,11 @@ let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される
 \end{verbatim}
 \caption{CPS インタプリタを非関数化して CPS 変換したプログラム}
 \label{figure:3cps}
+\end{spacing}
 \end{figure}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % code/4defun/syntax.ml より
 \begin{verbatim}
 (* CPS インタプリタを非関数化して CPS 変換して非関数化した関数 *)
@@ -101,9 +104,11 @@ let interpreter (e : e) : a = eval e FId GId
 \end{verbatim}
 \caption{CPS インタプリタを非関数化して CPS 変換して非関数化したプログラム}
 \label{figure:4defun}
+\end{spacing}
 \end{figure}
 
 \begin{figure}
+\begin{spacing}{0.8}
   % 5memo/syntax.ml より
   % FApp1 の引数を交換、plug_all の match の中を字下げした
 \begin{verbatim}
@@ -125,4 +130,5 @@ let rec plug_all (e : e) ((k, k2) : cont) : e =
 \end{verbatim}
 \caption{式とコンテキスト情報を受け取ってプログラムを再構成して返す関数}
 \label{figure:plug_all}
+\end{spacing}
 \end{figure}

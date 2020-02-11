@@ -20,6 +20,7 @@
 出力プログラム中の変数に値を代入すればよい。
 
 \begin{figure}
+\begin{spacing}{0.8}
 \begin{verbatim}
 (* 値 *)
 type v = Var of string      (* x *)
@@ -42,6 +43,7 @@ let rec eval (exp : e) : v = match exp with
 \end{verbatim}
 \caption{型無し$\lambda$計算とそのインタプリタ}
 \label{figure:lambda}
+\end{spacing}
 \end{figure}
 
 このインタプリタをステッパにするには、簡約をする際に簡約前後のプログラ
@@ -61,6 +63,7 @@ let rec eval (exp : e) : v = match exp with
 の式全体をそれぞれ出力するものである。
 
 \begin{figure}
+\begin{spacing}{0.8}
 \begin{verbatim}
 (* コンテキスト *)
 type c = CId             (* [.] *)
@@ -85,6 +88,7 @@ let stepper (exp : e) = eval exp CId
 \end{verbatim}
 \caption{型無し$\lambda$計算に対するステッパ}
 \label{figure:lambda_stepper}
+\end{spacing}
 \end{figure}
 
 図\ref{figure:lambda_stepper}のように、コンテキストを表すデータ型を定
