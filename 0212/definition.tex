@@ -24,9 +24,10 @@ handle 10 + op(3)
 するが、そこで \texttt{op(3)} というオペレーション呼び出しが起こる。
 オペレーション呼び出しというのは副作用を起こす命令で、
 直感的にはここで例外 \texttt{op} を引数 3 で起こすのに近い。
-本論文では使用するオペレーションは全て既に宣言されていると仮定する。
+本論文では、使用するオペレーションは全て既に宣言されていると仮定する。
+またこれ以降、\texttt{with h handle e} の中の式 \texttt{e} を「handle 節」と呼ぶ。
 
-オペレーション呼び出しが起こると、プログラムの制御はハンドラ部分に移る。
+オペレーション呼び出しが起こると、プログラムの制御は handle 節に移る。
 ハンドラは正常終了を処理する部分 \texttt{return x -> ...}\ と
 オペレーション呼び出しを処理する部分に分かれている。
 正常終了する部分は
@@ -55,7 +56,7 @@ handle 10 + op(3)
 
 algebraic effect handlers の特徴は、オペレーション呼び出しの意味がハンドラで決
 まる部分にある。\texttt{op(3)} とした時点ではこの処理の内容は未定だ
-が、ハンドラ部分に \texttt{k (x + 1)} と書かれているため、
+が、handle 節に \texttt{k (x + 1)} と書かれているため、
 結果として \texttt{op} は 1 を加えるような作用だったことになる。
 
 \subsection{構文の定義}
@@ -116,7 +117,7 @@ and a = Return of v                      (* 値になった *)
 オペレーション呼び出しにより非局所的に制御が移るので、
 意味論は CPS インタプリタを定義することで与える。
 対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
-ここで \texttt{k} は各ハンドラ内部の限定継続を表す。
+ここで \texttt{k} は各 handle 節の限定継続を表す。
 また、\texttt{a} は \texttt{handle} 節内の式の実行が正常終了したのか
 オペレーション呼び出しだったのかを示す型である。
 
@@ -188,7 +189,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \end{figure}
 
 このインタプリタは、\texttt{handle} 節内の実行については普通の CPS に
-なっており、継続である \texttt{k} は「直近のハンドラまでの継続」で
+なっており、継続である \texttt{k} は「直近の \texttt{handle} までの継続」で
 ある。関数 \texttt{eval} の下から2行目で \texttt{with handle} 文を
 実行する際、再帰呼び出しの継続として
 \texttt{(fun x -> Return x)} を渡していて、これによって
@@ -209,12 +210,12 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 ここで、オペレーション呼び出しで返される \texttt{OpCall} の第 3 引数
 が \texttt{k} ではなく \texttt{fun v -> k v} のように $\eta$-expand さ
 れているのに注意しよう。このようにしているのは、\texttt{k} が「直近の
-ハンドラまでの継続」を表しているのに対し、\texttt{OpCall} の第 3 引数
+\texttt{handle} までの継続」を表しているのに対し、\texttt{OpCall} の第 3 引数
 はより広い継続を指すことがあり両者を区別したいためである。これについて
 は、次節で非関数化を施す際に詳しく述べる。
 
 \texttt{apply\_handler} は、そのときの継続 \texttt{k}、
-処理すべきハンドラ \texttt{h}、そして
+ハンドラ \texttt{h}、そして
 \texttt{handle} 節内の実行結果 \texttt{a} を受け取って
 ハンドラの処理をする。
 関数 \texttt{apply\_handler} の動作は \texttt{handle} 節の実行結果とハ
@@ -225,7 +226,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, m)} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていなかった場合：
 さらに外側の \texttt{with handle} 文に処理を移すため、
 \texttt{handle} 節内の限定継続 \texttt{m} に、1つ外側の \texttt{handle} までの限定継続を合成した継続 \texttt{fun v -> ...} を作り、それを \texttt{OpCall (name, v, (fun v -> ...))} と返す
-。この \texttt{OpCall} の第 3 引数は「直近のハンドラまでの継続」ではな
+。この \texttt{OpCall} の第 3 引数は「直近の \texttt{handle} までの継続」ではな
 く、より広い継続となっている。
 
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, m)} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていた場合：そのハンドラの定義 \texttt{name (x; y) -> e} を参照し、
