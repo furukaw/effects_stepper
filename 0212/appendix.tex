@@ -132,3 +132,53 @@ let rec plug_all (e : e) ((k, k2) : cont) : e =
 \label{figure:plug_all}
 \end{spacing}
 \end{figure}
+
+\begin{figure}
+\begin{spacing}{0.9}
+\begin{verbatim}
+Step 0:
+  ((with {return x -> (fun u -> x);
+          Get(u; k) -> (fun s -> ((k s) s));
+          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+    handle (Get (Set (fun b -> b)))) (fun c -> c))
+Step 1:
+  ((fun u -> (((fun y => (with {return x -> (fun u -> x);
+                                Get(u; k) -> (fun s -> ((k s) s));
+                                Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+                          handle (Get y))) (fun a -> a)) (fun b -> b)))
+                         (fun c -> c))
+Step 2:
+  (((fun y => (with {return x -> (fun u -> x);
+                     Get(u; k) -> (fun s -> ((k s) s));
+                     Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+               handle (Get y))) (fun a -> a)) (fun b -> b))
+Step 3:
+  ((with {return x -> (fun u -> x);
+          Get(u; k) -> (fun s -> ((k s) s));
+          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+    handle (Get (fun a -> a))) (fun b -> b))
+Step 4:
+  ((fun s -> (((fun z => (with {return x -> (fun u -> x);
+                                Get(u; k) -> (fun s -> ((k s) s));
+                                Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+                          handle z)) s) s)) (fun b -> b))
+Step 5:
+  (((fun z => (with {return x -> (fun u -> x);
+                     Get(u; k) -> (fun s -> ((k s) s));
+                     Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+               handle z)) (fun b -> b)) (fun b -> b))
+Step 6:
+  ((with {return x -> (fun u -> x);
+          Get(u; k) -> (fun s -> ((k s) s));
+          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
+    handle (fun b -> b)) (fun b -> b))
+Step 7:
+  ((fun u -> (fun b -> b)) (fun b -> b))
+Step 8:
+  (fun b -> b)
+\end{verbatim}
+\end{spacing}
+\caption{図 \ref{figure:6cps} のステッパを用いたステップ実行の例。
+実際には Step 1 から Step 7 は2回ずつ出力される。}
+\label{figure:step_example}
+\end{figure}
