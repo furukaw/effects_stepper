@@ -13,8 +13,8 @@ let rec eval (exp : e) (k : k) : a = match exp with
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) : a = match k with
   | FId -> Return v  (* 空の継続、そのまま値を返す *)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k))
-  | FApp1 (v2, k) -> let v1 = v in
+  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (k, v2))
+  | FApp1 (k, v2) -> let v1 = v in
     (match v1 with
       | Fun (x, e) ->
         let reduct = subst e [(x, v2)] in

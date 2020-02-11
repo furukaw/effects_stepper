@@ -18,8 +18,8 @@ let rec eval (exp : e) (k : k) (k2 : k2) : a = match exp with
 (* handle 節内の継続を適用する関数 *)
 and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FId -> apply_out k2 (Return v)
-  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
-  | FApp1 (v2, k) -> let v1 = v in (match v1 with
+  | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (k, v2)) k2
+  | FApp1 (k, v2) -> let v1 = v in (match v1 with
     | Fun (x, e) ->
       let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
       let reduct = subst e [(x, v2)] in    (* e[v2/x] *)
@@ -41,7 +41,7 @@ and apply_out (k2 : k2) (a : a) : a = match k2 with
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-      let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
+      let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
       let reduct = subst e [(x, v)] in  (* e[v/x] *)
       memo redex reduct (k, k2); eval reduct k k2)
   | OpCall (name, v, (k', k2'), m) -> (match search_op name h with
@@ -49,12 +49,12 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
       apply_out k2 (OpCall (name, v, (k', compose_k2 k2' h (k, GId)),
         (fun v -> fun k2' -> m v (GHandle (h, k, k2')))))
     | Some (x, y, e) ->
-      (* with handler {name(x; y) -> e} handle k2'[k'[name v]] *)
+      (* with {name(x; y) -> e} handle k2'[k'[name v]] *)
       let redex = With (h, plug_all (Op (name, Val v)) (k', k2')) in
       let cont_value =
         Cont (gen_var_name (), (k', compose_k2 k2' h (FId, GId)),
           (fun k'' -> fun v -> fun k2 -> m v (GHandle (h, k'', k2)))) in
-      (* e[v/x, (fun n => with handler {...} handle k2'[k'[n]]) /y *)
+      (* e[v/x, (fun n => with {name(x; y) -> e} handle k2'[k'[n]]) /y *)
       let reduct = subst e [(x, v); (y, cont_value)] in
       memo redex reduct (k, k2);
       eval reduct k k2)

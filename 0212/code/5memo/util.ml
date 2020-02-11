@@ -15,7 +15,7 @@ let rec subst_v (v : v) (pairs : (string * v) list) : v = match v with
 and subst_k (k : k) (pairs : (string * v) list) : k = match k with
   | FId -> FId
   | FApp2 (e1, k) -> FApp2 (subst e1 pairs, subst_k k pairs)
-  | FApp1 (v2, k) -> FApp1 (subst_v v2 pairs, subst_k k pairs)
+  | FApp1 (k, v2) -> FApp1 (subst_k k pairs, subst_v v2 pairs)
   | FOp (name, k) -> FOp (name, subst_k k pairs)
 
 and subst_k2 (k2 : k2) (pairs : (string * v) list) : k2 = match k2 with

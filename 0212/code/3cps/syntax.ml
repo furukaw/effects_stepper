@@ -16,7 +16,7 @@ and e = Val of v          (* v *)
 (* handle 内の限定継続 *)
 and k = FId                (* [.] *)
       | FApp2 of e * k     (* [e [.]] *)
-      | FApp1 of v * k     (* [[.] v] *)
+      | FApp1 of k * v     (* [[.] v] *)
       | FOp of string * k  (* [op [.]] *)
 (* 継続 *)
 and k2 = a -> a

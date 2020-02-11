@@ -20,11 +20,11 @@ and k = v -> c2 -> a
 (* handle 内のコンテキスト *)
 and c = FId                (* [.] *)
       | FApp2 of e * c     (* [e [.]] *)
-      | FApp1 of v * c     (* [[.] v] *)
+      | FApp1 of c * v     (* [[.] v] *)
       | FOp of string * c  (* [op [.]] *)
 (* 全体のコンテキスト *)
-and c2 = GId                    (* [.] *)
-       | GHandle of h * c * c2  (* [[with h handle [.]]] *)
+and c2 = GId
+       | GHandle of h * c * c2
 
 
 type cont = c * c2
@@ -34,7 +34,7 @@ let hole : e = Val (Var "8")
 let rec plug_in_handle (e : e) (k : c) : e = match k with
   | FId -> e
   | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
-  | FApp1 (v2, k) -> plug_in_handle (App (e, Val v2)) k
+  | FApp1 (k, v2) -> plug_in_handle (App (e, Val v2)) k
   | FOp (name, k) -> plug_in_handle (Op (name, e)) k
 
 let rec plug_all (e : e) ((k, k2) : cont) : e =

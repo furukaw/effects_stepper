@@ -16,7 +16,7 @@ and e = Val of v          (* v *)
 (* handle 内の継続 *)
 and k = FId
       | FApp2 of e * k
-      | FApp1 of v * k
+      | FApp1 of k * v
       | FOp of string * k
 
 and k2 = GId
@@ -33,7 +33,7 @@ let hole : e = Val (Var "8")
 let rec plug_in_handle (e : e) (k : k) : e = match k with
   | FId -> e
   | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
-  | FApp1 (v2, k) -> plug_in_handle (App (e, Val v2)) k
+  | FApp1 (k, v2) -> plug_in_handle (App (e, Val v2)) k
   | FOp (name, k) -> plug_in_handle (Op (name, e)) k
 
 let rec plug_all (e : e) ((k, k2) : cont) : e =

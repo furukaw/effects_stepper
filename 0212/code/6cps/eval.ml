@@ -12,7 +12,7 @@ let rec compose_c2 (k2_in : c2) (h : h) ((k_out, k2_out) : c * c2) : c2 =
 let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
   | Val (v) -> k v c2
   | App (e1, e2) -> eval e2 (FApp2 (e1, c), (fun v2 c2 ->
-    eval e1 (FApp1 (v2, c), (fun v1 c2 -> match v1 with
+    eval e1 (FApp1 (c, v2), (fun v1 c2 -> match v1 with
       | Fun (x, e) ->
         let redex = App (Val v1, Val v2) in  (* (fun x -> e) v2 *)
         let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
@@ -31,7 +31,7 @@ let rec eval (exp : e) ((c, k) : c * k) (c2 : c2) : a = match exp with
 (* handle 節内の実行結果をハンドラで処理する関数 *)
 and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
   | Return v -> (match h with {return = (x, e)} ->
-    let redex = With (h, Val v) in  (* with hdlr {return x -> e} handle v *)
+    let redex = With (h, Val v) in  (* with {return x -> e} handle v *)
     let reduct = subst e [(x, v)] in  (* e[v/x] *)
     memo redex reduct (c, c2); eval reduct (c, k) c2)
   | OpCall (name, v, (c', c2'), k') ->
@@ -40,13 +40,13 @@ and apply_handler ((c, k) : c * k) (h : h) (a : a) (c2 : c2) : a = match a with
         (fun v' c2'' -> let a' = k' v' (GHandle (h, c, c2'')) in
           apply_handler (c, k) h a' c2''))
       | Some (x, y, e) ->
-        (* with handler {name(x; y) -> e} handle c2'[c'[name v]] *)
+        (* with {name(x; y) -> e} handle c2'[c'[name v]] *)
         let redex = With (h, plug_all (Op (name, Val v)) (c', c2')) in
         let cont_value = Cont (gen_var_name (),
-          (c', compose_c2 c2' h (FId, GId)),(fun (c'', k'') v' c2'' ->
+          (c', compose_c2 c2' h (FId, GId)), (fun (c'', k'') v' c2'' ->
         let a' = k' v' (GHandle (h, c'', c2'')) in
         apply_handler (c'', k'') h a' c2)) in
-        (* e[v/x, (fun n => with h handle c2'[c'[y]])/y *)
+        (* e[v/x, (fun n => with {name(x; y) -> e} handle c2'[c'[y]])/y *)
         let reduct = subst e [(x, v); (y, cont_value)] in
         memo redex reduct (c, c2); eval reduct (c, k) c2)
 
