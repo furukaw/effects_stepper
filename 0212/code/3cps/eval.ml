@@ -16,12 +16,12 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k)) k2
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
-     | Fun (x, e) ->
-       let reduct = subst e [(x, v2)] in
-       eval reduct k k2
-     | Cont (cont_value) ->
-       (cont_value k) v2 k2
-     | _ -> failwith "type error")
+      | Fun (x, e) ->
+        let reduct = subst e [(x, v2)] in
+        eval reduct k k2
+      | Cont (cont_value) ->
+        (cont_value k) v2 k2
+      | _ -> failwith "type error")
   | FOp (name, k) ->
     k2 (OpCall (name, v, (fun v -> fun k2' -> apply_in k v k2')))
 
@@ -29,19 +29,19 @@ and apply_in (k : k) (v : v) (k2 : k2) : a = match k with
 and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-       let reduct = subst e [(x, v)] in
-       eval reduct k k2)
-  | OpCall (name, v, va) ->
+      let reduct = subst e [(x, v)] in
+      eval reduct k k2)
+  | OpCall (name, v, m) ->
     (match search_op name h with
-     | None ->
-       k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 外の継続を適用 *)
-           va v (fun a' -> apply_handler k h a' k2'))))  (* GHandle に変換 *)
-     | Some (x, y, e) ->
-       let cont_value =
-         Cont (fun k'' -> fun v -> fun k2 ->
-             va v (fun a' -> apply_handler k'' h a' k2)) in  (* GHandle に変換 *)
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k k2)
+      | None ->
+        k2 (OpCall (name, v, (fun v -> fun k2' ->  (* 外の継続を適用 *)
+          m v (fun a' -> apply_handler k h a' k2'))))  (* GHandle に変換 *)
+      | Some (x, y, e) ->
+        let cont_value =
+          Cont (fun k'' -> fun v -> fun k2'' ->
+            m v (fun a' -> apply_handler k'' h a' k2'')) in  (* GHandle に変換 *)
+        let reduct = subst e [(x, v); (y, cont_value)] in
+        eval reduct k k2)
 
 (* 初期継続を渡して実行を始める *)
 let interpreter (e : e) : a = eval e FId (fun a -> a)  (* GId に変換される *)

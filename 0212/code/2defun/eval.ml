@@ -16,12 +16,12 @@ and apply_in (k : k) (v : v) : a = match k with
   | FApp2 (e1, k) -> let v2 = v in eval e1 (FApp1 (v2, k))
   | FApp1 (v2, k) -> let v1 = v in
     (match v1 with
-     | Fun (x, e) ->
-       let reduct = subst e [(x, v2)] in
-       eval reduct k
-     | Cont (cont_value) ->
-       (cont_value k) v2
-     | _ -> failwith "type error")
+      | Fun (x, e) ->
+        let reduct = subst e [(x, v2)] in
+        eval reduct k
+      | Cont (cont_value) ->
+        (cont_value k) v2
+      | _ -> failwith "type error")
   | FOp (name, k) ->
     OpCall (name, v, (fun v -> apply_in k v))  (* Op 呼び出しの情報を返す *)
 
@@ -29,21 +29,21 @@ and apply_in (k : k) (v : v) : a = match k with
 and apply_handler (k : k) (h : h) (a : a) : a = match a with
   | Return v ->
     (match h with {return = (x, e)} ->
-       let reduct = subst e [(x, v)] in
-       eval reduct k)
+      let reduct = subst e [(x, v)] in
+      eval reduct k)
   | OpCall (name, v, m) ->
     (match search_op name h with
-     | None ->
-       OpCall (name, v, (fun v ->
-           let a' = m v in
-           apply_handler k h a'))
-     | Some (x, y, e) ->
-       let cont_value =
-         Cont (fun k'' -> fun v ->
-             let a' = m v in
-             apply_handler k'' h a') in
-       let reduct = subst e [(x, v); (y, cont_value)] in
-       eval reduct k)
+      | None ->
+        OpCall (name, v, (fun v ->
+          let a' = m v in
+          apply_handler k h a'))
+      | Some (x, y, e) ->
+        let cont_value =
+          Cont (fun k'' -> fun v ->
+            let a' = m v in
+            apply_handler k'' h a') in
+        let reduct = subst e [(x, v); (y, cont_value)] in
+        eval reduct k)
 
 (* 初期継続を渡して実行を始める *)
 let interpreter (e : e) : a = eval e FId
