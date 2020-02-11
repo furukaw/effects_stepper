@@ -104,8 +104,8 @@ and e = Val of v          (* v *)
 (* handle 内の継続 *)
 and k = v -> a
 (* handle 内の実行結果 *)
-and a = Return of v               (* 値になった *)
-      | OpCall of string * v * k  (* オペレーションが呼び出された *)
+and a = Return of v                      (* 値になった *)
+      | OpCall of string * v * (v -> a)  (* オペレーションが呼び出された *)
 \end{verbatim}
 \caption{対象言語の定義}
 \label{figure:syntax}

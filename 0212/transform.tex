@@ -41,10 +41,14 @@
   % code/2defun/syntax.ml より
 \begin{verbatim}
 (* handle 内の継続 *)
-type k = FId                 (* [.] *)
-       | FApp2 of e * k      (* [e [.]] *)
-       | FApp1 of k * v      (* [[.] v] *)
-       | FOp of string * k   (* [op [.]] *)
+type k = FId                (* [.] *)
+       | FApp2 of e * k     (* [e [.]] *)
+       | FApp1 of k * v     (* [[.] v] *)
+       | FOp of string * k  (* [op [.]] *)
+
+(* handle 内の実行結果 *)
+type a = Return of v                            (* 前と同じ *)
+       | OpCall of string * v * (v -> k2 -> a)  (* 継続をとるように変更 *)
 \end{verbatim}
 \caption{非関数化後の継続の型}
 \label{figure:k_2defun}
@@ -271,7 +275,7 @@ let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
   % code/6cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
-type v = ...
+type v = ...                                        (* 前と同じ *)
        | Cont of string * (c * c2) * ((c * k) -> k) (* 継続 *)
 (* handle 内の実行結果 *)
 and a = Return of v                          (* 値になった *)
