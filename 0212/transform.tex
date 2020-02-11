@@ -37,7 +37,7 @@
 \end{enumerate}
 
 \begin{figure}
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/2defun/syntax.ml より
 \begin{verbatim}
 (* handle 内の継続 *)
@@ -56,7 +56,7 @@ type a = Return of v                            (* 前と同じ *)
 \end{figure}
 
 \begin{figure}[t]
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/2defun/eval.ml より
   % インデントした
 \begin{verbatim}
@@ -143,7 +143,7 @@ CPS 変換ですべてのコンテキスト情報がふたつの継続に集約�
 インタプリタは付録の図 \ref{figure:4defun} に変換される。
 
 \begin{figure}[t]
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/4defun/syntax.ml より
 \begin{verbatim}
 (* 全体のメタ継続 *)
@@ -156,7 +156,7 @@ type k2 = GId
 \end{figure}
 
 \begin{figure}
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % インデントした
 \begin{alltt}
 (* handle 節内の継続を適用する関数 *)
@@ -256,7 +256,7 @@ algebraic effect handlers の入った体系の抽象機械で継続を表すデ
 コンテキストの結合を行なっている。
 
 \begin{figure}[t]
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/5memo/eval.ml より
 \begin{verbatim}
 (* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
@@ -271,7 +271,7 @@ let rec compose_k2 (k2_in : k2) (h : h) ((k_out, k2_out) : k * k2) : k2 =
 \end{figure}
 
 \begin{figure}[t]
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/6cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
@@ -297,7 +297,7 @@ and c2 = GId
 \end{figure}
 
 \begin{figure}
-\begin{spacing}{0.9} 
+\begin{spacing}{0.9}
   % code/6cps/eval.ml より
   % 2マスずつインデントした
 \begin{verbatim}
