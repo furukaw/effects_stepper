@@ -19,7 +19,9 @@
 階関数は全てその自由変数を引数に持つような１階のデータ構造となり、高階
 関数を呼び出していた部分は apply 関数の呼び出しとなる。この apply 関数
 は、高階関数が呼び出されていたら行ったであろう処理を行うように別途、定
-義されるものである。この変換は機械的に行うことができる。
+義されるものである。この変換は
+(非関数化する対象の関数が特定されれば)
+機械的に行うことができる。
 
 具体的に図\ref{figure:1cps}のプログラムの継続 \texttt{k} 型の$\lambda$式を
 非関数化するには次のようにする。結果は図 \ref{figure:k_2defun}と図 \ref{figure:2defun}のようになる。
@@ -78,7 +80,7 @@ and apply_in (k : k) (v : v) : a = match k with
     OpCall (name, v, (fun v -> apply_in k v))  (* Op 呼び出しの情報を返す *)
 
 (* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) : a = ... (* 非関数化前と同じ *)
+and apply_handler (k : k) (h : h) (a : a) : a = ... (* 非関数化前(図5)と同じ *)
 
 (* 初期継続を渡して実行を始める *)
 let interpreter (e : e) : a = eval e FId
