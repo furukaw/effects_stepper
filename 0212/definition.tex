@@ -246,41 +246,53 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 限定継続が必要なので、それを \texttt{cont\_value k} のように渡してから
 値 \texttt{v2} を渡している。
 
-例えば、プログラム
-\begin{quote}
+オペレーション呼び出しの部分を、例を使って説明する。以下のプログラムを
+考える。（ここで、数字と四則演算がサポートされていると仮定する。）
 \begin{verbatim}
-with {o(x; k) -> k x} handle (with {p(x; k) -> x} handle o (fun c -> c))
+  with {o(x; k) -> k (x*3)} handle (with {p(x; k) -> k (x-1)} handle o(1)+p(2))
 \end{verbatim}
-\end{quote}
-の実行は以下のように進む。
+この実行は informal には以下のように進む。
 \begin{enumerate}
 \item
-\texttt{o (fun c -> c)} の実行結果は \texttt{OpCall ("o", (fun c -> c)の構文木, 内側の handle 節内の継続} となる。
+まず \texttt{p(2)} が実行されるが、このときに \texttt{eval} が返す値は
+   \texttt{OpCall ("p", 2, o(1)+[.])}
+   のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
+   が呼ばれる。このとき \texttt{k} は内側の with 文から外側の with 文までの間の
+   継続（この場合は空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
 \item
-\texttt{with \{p(x; k) -> x\} handle o (fun c -> c)} の実行において、
-\texttt{eval} の下から2行目でこの実行結果を得て次の行でハンドラ処理を始める。
+呼び出されたオペレーション \texttt{"p"} がハンドラ \texttt{h} の中に存在するので、 \texttt{"p"}
+   に対応する式が実行される。具体的には \texttt{k (x-1)} が $\texttt{x}=\texttt{2}, \texttt{k}=\texttt{cont\US{}value}$
+   のもとで実行される。ここで \texttt{cont\US{}value k} は
+   \texttt{(with {p(x; k) -> k (x-1)} handle o(1)+[.])}
+   となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
+   \texttt{cont\US{}value} に \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} を処理するハンドラが含まれるのは
+   deep handler の特徴である。
 \item
-そこではハンドラ \texttt{\{p(x; k) -> x\}} でオペレーション \texttt{o}
-が定義されていないので \texttt{OpCall} の \texttt{None} のパターンに入り、
-\texttt{with \{p(x; k) -> x\} handle o (fun c -> c)} の実行結果は
-\texttt{OpCall ("o", (fun c -> c)の構文木, 外側の handle 節内の継続} となる。
+\texttt{k (x-1)} を実行すると、全体として式は
+   \texttt{with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with\\\LBR{}p(x;k) -> k (x-1)\RBR{} handle o(1)+1)}
+   となる。
 \item
-プログラム全体の実行において、
-\texttt{eval} の下から2行目でこの実行結果を得て次の行でハンドラ処理を始める。
+次に \texttt{o(1)} が実行されるが、このときに \texttt{eval} が返す値は
+   \texttt{OpCall ("o", 1, [.]+1)}
+   のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
+   が呼ばれる。このとき \texttt{k} は内側の with 文から外側の with 文までの間の
+   継続（空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
 \item
-そこではハンドラ \texttt{\{o(x; k) -> k x\}} でオペレーション \texttt{o}
-が定義されているので \texttt{OpCall} の \texttt{Some} のパターンに入り、
-\texttt{cont\_value} を得る。
-\texttt{cont\_value} が持つ関数は、
-\texttt{外側の handle 節内の継続} の後に引数の \texttt{k''} を適用するという
-合成継続を返す。
+呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在しないので、
+   \texttt{OpCall ("o", 1, with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1)}
+   が値として返される。これが、外側の with handle 文の \texttt{a} の値となり、
+   \texttt{apply\US{}handler} が呼ばれる。このとき \texttt{k} は外側の with 文の外の継続
+   （空）、\texttt{h} は \texttt{\LBR{}o(x; k) -> k (x*3)\RBR} である。
 \item
-\texttt{k x} にそれぞれ値を入れた式 \texttt{(継続値) (fun c -> c)} を実行し、関数\texttt{eval} で
-\texttt{App} の \texttt{Cont} のパターンに入る。
+今回は呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在するの
+   で、\texttt{"o"} に対応する式が実行される。具体的には \texttt{k (x*3)} が $\texttt{x}=\texttt{1},
+   \texttt{k}=\texttt{cont\US{}value}$ のもとで実行される。ここで \texttt{cont\US{}value k} は
+   \texttt{(with \LBR{}o(x; k) -> k (x*3)\RBR handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1))}
+   となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
 \item
-\texttt{cont\_value k} と現在の継続を渡すことで \texttt{外側の handle 節内の継続} の後に現在の継続を適用するという合成継続を得る。
-\item
-合成継続に、引数 \texttt{fun c -> c)} を渡して、全体の実行結果を得る。
+\texttt{k (x*3)} を実行すると、全体として式は
+   \texttt{with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle 3+1)}
+   となリ、全体としては \texttt{4} が返る。
 \end{enumerate}
 
 これまで、algebraic effect handlers の意味論は small step のもの
@@ -288,9 +300,11 @@ with {o(x; k) -> k x} handle (with {p(x; k) -> x} handle o (fun c -> c))
 以外には
 CPS で書かれた big step のもの
 \cite{e6cb0c3222794e48bf38cf44e46fe4aa}
-が提示されてきたが、この意味論はすでに部分式に名前が与えられている
-（A-正規形になっている）ことを仮定している上に、毎回、捕捉する継続を
-計算しているなど実装には必ずしも合ったものとは言えなかった。
-ここで示した CPS インタプリタは単純で、ハンドラの意味を的確に捉えて
-おり、algebraic effect handlers の定義を与えるインタプリタ (definitional
-intepreter) と捉えて良いのではないかと考えている。
+が提示されてきた。
+この意味論は、直近のハンドラまでの継続とその外側
+のメタ継続のふたつを受け取る 2CPS の形をしているが、末尾呼び出しでない
+部分が存在するなどの問題があった。本論文で示した意味論は、ハンドラ内部
+の処理のみを CPS で表現しているため、ハンドラの外側の部分については直
+接形式となっている。しかし、これを CPS 変換すると全てが末尾呼び出しに
+なっている 2CPS のインタプリタが得られ、これまでの意味論の問題点を解決
+するものとなっている。
