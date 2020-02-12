@@ -1,8 +1,88 @@
-\newpage
 \appendix
 \section{付録}
 
+\subsection{algebraic effect handlers のステッパによる実行の例}
+\label{subsection:step_example}
+
+\begin{figure}
+\begin{spacing}{0.8}
+\begin{verbatim}
+Step 0:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set ((Get ()) + 1)))) 0)
+Step 1:  ((fun s ->
+           (((fun y => (with {return x -> (fun _ -> x),
+                              Get(_; k) -> (fun s -> ((k s) s)),
+                              Set(s; k) -> (fun _ -> ((k ()) s))}
+                        handle ((fun _ -> (Get ())) (Set (y + 1))))) s) s)) 0)
+Step 2:  (((fun y => (with {return x -> (fun _ -> x),
+                            Get(_; k) -> (fun s -> ((k s) s)),
+                            Set(s; k) -> (fun _ -> ((k ()) s))}
+                      handle ((fun _ -> (Get ())) (Set (y + 1))))) 0) 0)
+Step 3:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set (0 + 1)))) 0)
+Step 4:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set 1))) 0)
+Step 5:  ((fun _ -> (((fun z => (with {return x -> (fun _ -> x),
+                                       Get(_; k) -> (fun s -> ((k s) s)),
+                                       Set(s; k) -> (fun _ -> ((k ()) s))}
+                                 handle ((fun _ -> (Get ())) z))) ()) 1)) 0)
+Step 6:  (((fun z => (with {return x -> (fun _ -> x),
+                            Get(_; k) -> (fun s -> ((k s) s)),
+                            Set(s; k) -> (fun _ -> ((k ()) s))}
+                      handle ((fun _ -> (Get ())) z))) ()) 1)
+Step 7:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) ())) 1)
+Step 8:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))} handle (Get ())) 1)
+Step 9:  ((fun s -> (((fun a => (with {return x -> (fun _ -> x),
+                                       Get(_; k) -> (fun s -> ((k s) s)),
+                                       Set(s; k) -> (fun _ -> ((k ()) s))}
+                                 handle a)) s) s)) 1)
+Step 10:  (((fun a => (with {return x -> (fun _ -> x),
+                             Get(_; k) -> (fun s -> ((k s) s)),
+                             Set(s; k) -> (fun _ -> ((k ()) s))}
+                       handle a)) 1) 1)
+Step 11:  ((with {return x -> (fun _ -> x),
+                  Get(_; k) -> (fun s -> ((k s) s)),
+                  Set(s; k) -> (fun _ -> ((k ()) s))} handle 1) 1)
+Step 12:  ((fun _ -> 1) 1)
+Step 13:  1
+\end{verbatim}
+\end{spacing}
+\caption{図 \ref{figure:6cps} のステッパを用いたステップ実行の例}
+\label{figure:step_example}
+\end{figure}
+
+図\ref{figure:step_example} は、1つの値からなる状態を保持するハンドラを使ったプログラムをステップ実行した例である。
+
+状態ハンドラは、受け取った値を記録して \texttt{()} を返す \texttt{Set} と
+\texttt{()} を受け取って記録された値を返す \texttt{Get} の 2 つのオペレーションを定義している。
+\texttt{handle} 節で値が返された場合 (\texttt{return} 節) については、
+状態にかかわらず値をそのまま返す。
+入力プログラム (\texttt{Step 0} のプログラム) は、状態ハンドラのもとで、状態の初期値を \texttt{0} として、
+\texttt{Set (Get () + 1)} をした後に \texttt{Get ()} を返すというプログラムである。
+
+図 \ref{figure:step_example} の文字列は、
+4 節で最終的に得られたステッパ (図\ref{figure:6cps}) を
+整数、整数の足し算、unit 型で拡張したステッパの出力に改行とインデントを加えたものである。
+プログラムが 1 段階ずつ書き換わっていて関数の内容も表示されているので、
+限定継続の中身やその使われ方など理解が難しい機能の実行の様子を細かく見ることができる。
+例えば \texttt{Set 1} が実行されるステップ4までは \texttt{with handle} 式の後ろに \texttt{0} があったのが、
+\texttt{Set 1} の実行後は \texttt{1} になっており、ここが状態を保持している部分らしいということが観察できる。
+
+\newpage
+
 \subsection{変換の各過程におけるインタプリタ}
+
 \begin{figure}[!b]
 \begin{spacing}{0.9}
   % code/3cps/eval.ml より
@@ -108,82 +188,3 @@ let interpreter (e : e) : a = eval e FId GId
 \label{figure:4defun}
 \end{spacing}
 \end{figure}
-
-\newpage
-\subsection{algebraic effect handlers のステッパによる実行の例}
-\label{subsection:step_example}
-
-\begin{figure}[b]
-\begin{spacing}{0.8}
-\begin{verbatim}
-Step 0:  ((with {return x -> (fun _ -> x),
-                 Get(_; k) -> (fun s -> ((k s) s)),
-                 Set(s; k) -> (fun _ -> ((k ()) s))}
-           handle ((fun _ -> (Get ())) (Set ((Get ()) + 1)))) 0)
-Step 1:  ((fun s ->
-           (((fun y => (with {return x -> (fun _ -> x),
-                              Get(_; k) -> (fun s -> ((k s) s)),
-                              Set(s; k) -> (fun _ -> ((k ()) s))}
-                        handle ((fun _ -> (Get ())) (Set (y + 1))))) s) s)) 0)
-Step 2:  (((fun y => (with {return x -> (fun _ -> x),
-                            Get(_; k) -> (fun s -> ((k s) s)),
-                            Set(s; k) -> (fun _ -> ((k ()) s))}
-                      handle ((fun _ -> (Get ())) (Set (y + 1))))) 0) 0)
-Step 3:  ((with {return x -> (fun _ -> x),
-                 Get(_; k) -> (fun s -> ((k s) s)),
-                 Set(s; k) -> (fun _ -> ((k ()) s))}
-           handle ((fun _ -> (Get ())) (Set (0 + 1)))) 0)
-Step 4:  ((with {return x -> (fun _ -> x),
-                 Get(_; k) -> (fun s -> ((k s) s)),
-                 Set(s; k) -> (fun _ -> ((k ()) s))}
-           handle ((fun _ -> (Get ())) (Set 1))) 0)
-Step 5:  ((fun _ -> (((fun z => (with {return x -> (fun _ -> x),
-                                       Get(_; k) -> (fun s -> ((k s) s)),
-                                       Set(s; k) -> (fun _ -> ((k ()) s))}
-                                 handle ((fun _ -> (Get ())) z))) ()) 1)) 0)
-Step 6:  (((fun z => (with {return x -> (fun _ -> x),
-                            Get(_; k) -> (fun s -> ((k s) s)),
-                            Set(s; k) -> (fun _ -> ((k ()) s))}
-                      handle ((fun _ -> (Get ())) z))) ()) 1)
-Step 7:  ((with {return x -> (fun _ -> x),
-                 Get(_; k) -> (fun s -> ((k s) s)),
-                 Set(s; k) -> (fun _ -> ((k ()) s))}
-           handle ((fun _ -> (Get ())) ())) 1)
-Step 8:  ((with {return x -> (fun _ -> x),
-                 Get(_; k) -> (fun s -> ((k s) s)),
-                 Set(s; k) -> (fun _ -> ((k ()) s))} handle (Get ())) 1)
-Step 9:  ((fun s -> (((fun a => (with {return x -> (fun _ -> x),
-                                       Get(_; k) -> (fun s -> ((k s) s)),
-                                       Set(s; k) -> (fun _ -> ((k ()) s))}
-                                 handle a)) s) s)) 1)
-Step 10:  (((fun a => (with {return x -> (fun _ -> x),
-                             Get(_; k) -> (fun s -> ((k s) s)),
-                             Set(s; k) -> (fun _ -> ((k ()) s))}
-                       handle a)) 1) 1)
-Step 11:  ((with {return x -> (fun _ -> x),
-                  Get(_; k) -> (fun s -> ((k s) s)),
-                  Set(s; k) -> (fun _ -> ((k ()) s))} handle 1) 1)
-Step 12:  ((fun _ -> 1) 1)
-Step 13:  1
-\end{verbatim}
-\end{spacing}
-\caption{図 \ref{figure:6cps} のステッパを用いたステップ実行の例}
-\label{figure:step_example}
-\end{figure}
-
-図\ref{figure:step_example} は、1つの値からなる状態を保持するハンドラを使ったプログラムをステップ実行した例である。
-
-状態ハンドラは、受け取った値を記録して \texttt{()} を返す \texttt{Set} と
-\texttt{()} を受け取って記録された値を返す \texttt{Get} の 2 つのオペレーションを定義している。
-\texttt{handle} 節で値が返された場合 (\texttt{return} 節) については、
-状態にかかわらず値をそのまま返す。
-入力プログラム (\texttt{Step 0} のプログラム) は、状態ハンドラのもとで、状態の初期値を \texttt{0} として、
-\texttt{Set (Get () + 1)} をした後に \texttt{Get ()} を返すというプログラムである。
-
-図 \ref{figure:step_example} の文字列は、
-4 節で最終的に得られたステッパ (図\ref{figure:6cps}) を
-整数、整数の足し算、unit 型で拡張したステッパの出力に改行とインデントを加えたものである。
-プログラムが 1 段階ずつ書き換わっていて関数の内容も表示されているので、
-限定継続の中身やその使われ方など理解が難しい機能の実行の様子を細かく見ることができる。
-例えば \texttt{Set 1} が実行されるステップ4までは \texttt{with handle} 式の後ろに \texttt{0} があったのが、
-\texttt{Set 1} の実行後は \texttt{1} になっており、ここが状態を保持している部分らしいということが観察できる。
