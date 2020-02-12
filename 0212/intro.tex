@@ -7,18 +7,18 @@
 例えば OCaml のプログラム \texttt{let a = 1 + 2 in 4 + a} を入力される
 と、ステッパは以下のような実行ステップを表す文字列を出力する。
 
+\vspace{-5pt}
 \begin{spacing}{0.9}
 \begin{alltt}
 Step 0:  (let a = \colorbox{lightgreen}{(1 + 2)} in (4 + a))
 Step 1:  (let a = \colorbox{purple}{3} in (4 + a))
-
 Step 1:  \colorbox{lightgreen}{(let a = 3 in (4 + a))}
 Step 2:  \colorbox{purple}{(4 + 3)}
-
 Step 2:  \colorbox{lightgreen}{(4 + 3)}
 Step 3:  \colorbox{purple}{7}
 \end{alltt}
 \end{spacing}
+\vspace{-5pt}
 
 このように1段階ずつ確認していけば、具体的にどのような計算がされるのか
 を観察することができ、プログラムの動きを理解しやすい。またこの方法はデ

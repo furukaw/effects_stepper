@@ -45,7 +45,6 @@ type k = FId                (* [.] *)
        | FApp2 of e * k     (* [e [.]] *)
        | FApp1 of k * v     (* [[.] v] *)
        | FOp of string * k  (* [op [.]] *)
-
 (* handle 節内の実行結果 *)
 type a = Return of v                            (* 前と同じ *)
        | OpCall of string * v * (v -> k2 -> a)  (* 継続をとるように変更 *)
@@ -148,8 +147,17 @@ let interpreter (e : e) : a = eval e FId
 CPS 変換ですべてのコンテキスト情報がふたつの継続に集約された。ここで
 は、CPS 変換したことにより新たに現れた \texttt{a -> a} 型の関数を非関
 数化してデータ構造に変換する。
-非関数化によって型 \texttt{k2} の定義は図 \ref{figure:k2_4defun} に、
-インタプリタは付録の図 \ref{figure:4defun} に変換される。
+非関数化によって型 \texttt{k2} の定義は
+\vspace{-9pt}
+\begin{spacing}{0.9}
+  % code/4defun/syntax.ml より
+\begin{verbatim}
+type k2 = GId
+        | GHandle of h * k * k2
+\end{verbatim}
+\end{spacing}
+\vspace{-9pt}
+に、インタプリタは付録の図 \ref{figure:4defun} に変換される。
 
 この非関数化によって、引数 \texttt{k} と引数 \texttt{k2} からコンテキ
 スト全体の情報が得られるようになった。
@@ -176,19 +184,6 @@ algebraic effect handlers の入った体系の抽象機械において継続を
 
 \subsection{出力}
 \label{subsection:memo}
-
-\begin{figure}[t]
-\begin{spacing}{0.9}
-  % code/4defun/syntax.ml より
-\begin{verbatim}
-(* 全体のメタ継続 *)
-type k2 = GId
-        | GHandle of h * k * k2
-\end{verbatim}
-\caption{2回目の非関数化後の継続の型}
-\label{figure:k2_4defun}
-\end{spacing}
-\end{figure}
 
 \begin{figure}
 \begin{spacing}{0.9}
@@ -248,6 +243,20 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 \end{spacing}
 \end{figure}
 
+\begin{figure}
+\begin{spacing}{0.9}
+  % code/5memo/eval.ml より
+\begin{verbatim}
+(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
+let rec compose_k2 k2_in h (k_out, k2_out) = match k2_in with
+  | GId -> GHandle (h, k_out, k2_out)
+  | GHandle (h', k', k2') -> GHandle (h', k', compose_k2 k2' h (k_out, k2_out))
+\end{verbatim}
+\caption{継続を外側に拡張する関数}
+\label{figure:compose}
+\end{spacing}
+\end{figure}
+
 \ref{subsection:4defun} 節までの変換によって、コンテキストの情報を引数
 に保持するインタプリタ関数を得ることができた。この情報を用いて簡約前後
 のプログラムを出力するようにするとステッパが得られる。具体的には、簡約が起こる部分でプログラム全
@@ -274,21 +283,6 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 また、オペレーション呼び出しが処理されず外側の \texttt{with handle} 文
 に制御を移す際には、図 \ref{figure:compose}に示される関数を使って
 コンテキストの結合を行なっている。
-
-\begin{figure}[t]
-\begin{spacing}{0.9}
-  % code/5memo/eval.ml より
-\begin{verbatim}
-(* コンテキスト k2_in の外側にフレーム GHandle (h, k_out, k2_out) を付加する *)
-let rec compose_k2 k2_in h (k_out, k2_out) =
-  match k2_in with
-  | GId -> GHandle (h, k_out, k2_out)
-  | GHandle (h', k', k2') -> GHandle (h', k', compose_k2 k2' h (k_out, k2_out))
-\end{verbatim}
-\caption{継続を外側に拡張する関数}
-\label{figure:compose}
-\end{spacing}
-\end{figure}
 
 \begin{figure}[t]
 \begin{spacing}{0.9}
@@ -392,7 +386,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 が図 \ref{figure:6cps}である。
 図 \ref{figure:6cps} にある関数 \texttt{plug\_all :\ e -> (k * k2) -> e} は
 式と「\texttt{handle} 節内のコンテキストとそれより外のコンテキストのペア」を受け取って
-プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる。
+プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる (実装は付録の図 \ref{figure:plug_all} に示す)。
 このインタプリタは、もとの CPS インタプリタにコンテキストの情報として
 引数 \texttt{c} と \texttt{c2} を加え、簡約ごとにプログラムを再構成
 し、ステップ表示するようにしたものである。

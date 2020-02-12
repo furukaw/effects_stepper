@@ -31,19 +31,21 @@ type cont = c * c2
 
 let hole : e = Val (Var "8")
 
-let rec plug_in_handle (e : e) (k : c) : e = match k with
+(* 式と handle 節内のコンテキスト情報を受け取ってhandle 節の式を再構成する *)
+let rec plug_in_handle (e : e) (c : c) : e = match c with
   | FId -> e
-  | FApp2 (e1, k) -> plug_in_handle (App (e1, e)) k
-  | FApp1 (k, v2) -> plug_in_handle (App (e, Val v2)) k
-  | FOp (name, k) -> plug_in_handle (Op (name, e)) k
+  | FApp2 (e1, c) -> plug_in_handle (App (e1, e)) c
+  | FApp1 (c, v2) -> plug_in_handle (App (e, Val v2)) c
+  | FOp (name, c) -> plug_in_handle (Op (name, e)) c
 
-let rec plug_all (e : e) ((k, k2) : cont) : e =
-  let e_in_handle = plug_in_handle e k in
-  match k2 with
+(* 式と handle 節内と外のコンテキスト情報のペアを受け取ってプログラム全体を再構成する *)
+let rec plug_all (e : e) ((c, c2) : (c * c2)) : e =
+  let e_in_handle = plug_in_handle e c in
+  match c2 with
   | GId -> e_in_handle
-  | GHandle (h, k, k2) ->
+  | GHandle (h, c, c2) ->
     let e_handle = With (h, e_in_handle) in
-    plug_all e_handle (k, k2)
+    plug_all e_handle (c, c2)
 
 (* 値を文字列にする関数 *)
 let rec v_to_string (v : v) : string = match v with

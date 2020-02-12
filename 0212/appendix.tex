@@ -1,5 +1,32 @@
+\newpage
 \appendix
 \section{付録}
+
+\subsection{プログラムを再構成する関数}
+
+\begin{figure}[h]
+\begin{spacing}{0.9}
+\begin{verbatim}
+(* 式と handle 節内のコンテキスト情報を受け取って handle 節の式を再構成する *)
+let rec plug_in_handle (e : e) (c : c) : e = match c with
+  | FId -> e
+  | FApp2 (e1, c) -> plug_in_handle (App (e1, e)) c
+  | FApp1 (c, v2) -> plug_in_handle (App (e, Val v2)) c
+  | FOp (name, c) -> plug_in_handle (Op (name, e)) c
+
+(* 式と handle 節内と外のコンテキスト情報のペアを受け取ってプログラム全体を再構成する *)
+let rec plug_all (e : e) ((c, c2) : (c * c2)) : e =
+  let e_in_handle = plug_in_handle e c in
+  match c2 with
+  | GId -> e_in_handle
+  | GHandle (h, c, c2) ->
+    let e_handle = With (h, e_in_handle) in
+    plug_all e_handle (c, c2)
+\end{verbatim}
+\end{spacing}
+\caption{式とコンテキストを受け取って式全体を再構成する関数}
+\label{figure:plug_all}
+\end{figure}
 
 \subsection{algebraic effect handlers のステッパによる実行の例}
 \label{subsection:step_example}
@@ -64,7 +91,7 @@ Step 13:  1
 
 図\ref{figure:step_example} は、1つの値からなる状態を保持するハンドラを使ったプログラムをステップ実行した例である。
 
-状態ハンドラは、受け取った値を記録して \texttt{()} を返す \texttt{Set} と
+状態ハンドラは、受け取った値を記録して \texttt{()} を返す \texttt{Set} と、
 \texttt{()} を受け取って記録された値を返す \texttt{Get} の 2 つのオペレーションを定義している。
 \texttt{handle} 節で値が返された場合 (\texttt{return} 節) については、
 状態にかかわらず値をそのまま返す。
@@ -76,8 +103,10 @@ Step 13:  1
 整数、整数の足し算、unit 型で拡張したステッパの出力に改行とインデントを加えたものである。
 プログラムが 1 段階ずつ書き換わっていて関数の内容も表示されているので、
 限定継続の中身やその使われ方など理解が難しい機能の実行の様子を細かく見ることができる。
-例えば \texttt{Set 1} が実行されるステップ4までは \texttt{with handle} 式の後ろに \texttt{0} があったのが、
-\texttt{Set 1} の実行後は \texttt{1} になっており、ここが状態を保持している部分らしいということが観察できる。
+プログラムが長く読むのが大変な面はあるが、
+\texttt{Step 3} でふたつ目の \texttt{Get ()} が \texttt{0} となり、
+\texttt{Step 7} で \texttt{Set} により状態が \texttt{1} になり、
+\texttt{Step 11} でひとつ目の \texttt{Get ()} が \texttt{1} になっているのが観察できる。
 
 \newpage
 

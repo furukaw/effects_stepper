@@ -13,11 +13,13 @@ algebraic effect handlers は、例外や状態などの副作用を表現する
 と処理する部分（ハンドラ）からなる \cite{PRETNAR201519}。
 特徴は、副作用の意味がそれを処理するハンドラ部分で決まるところである。
 例えば、以下のプログラムを考える。
+\vspace{-5pt}
 \begin{verbatim}
 with {return x -> x;
       op(x; k) -> k (x + 1)}
 handle 10 + op(3)
 \end{verbatim}
+\vspace{-5pt}
 \texttt{with h handle e} は、\texttt{h} というハンドラ
 のもとで式 \texttt{e} を実行するという意味である。
 \texttt{e} の部分を見ると \texttt{10 + op(3)} とあるので加算を行おうと
@@ -66,6 +68,7 @@ algebraic effect handlers の特徴は、オペレーション呼び出しの意
 全て異ならくてはいけない。
 
 \begin{figure}[t]
+\begin{spacing}{0.9}
 \begin{verbatim}
 v  :=                                      (値)
       x                                    変数
@@ -79,6 +82,7 @@ h  :=                                      (ハンドラ)
       {return x -> e;                      return 節
        op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
 \end{verbatim}
+\end{spacing}
 \caption{対象言語の構文}
 \label{figure:abstract_syntax}
 \end{figure}
@@ -246,9 +250,11 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 
 オペレーション呼び出しの部分を、例を使って説明する。以下のプログラムを
 考える。（ここで、数字と四則演算がサポートされていると仮定する。）
+\vspace{-5pt}
 \begin{verbatim}
   with {o(x;k) -> k (x*3)} handle (with {p(x;k) -> k (x-1)} handle o(1)+p(2))
 \end{verbatim}
+\vspace{-5pt}
 この実行は informal には以下のように進む。以下ではハンドラをそれぞれ \texttt{\LBR{}o\RBR}、\texttt{\LBR{}p\RBR} と短縮する。
 \begin{quote}
 \texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+p(2))}\\
