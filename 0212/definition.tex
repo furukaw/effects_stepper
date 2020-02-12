@@ -70,12 +70,12 @@ algebraic effect handlers の特徴は、オペレーション呼び出しの意
 \begin{figure}[t]
 \begin{spacing}{0.9}
 \begin{verbatim}
-値　　　  v   := x                                   変数
-　　　　       | fun x -> e                          関数
-式　　　  e   := v                                   値
-　　　　       | e e                                 関数適用
-　　　　       | op e                                オペレーション呼び出し
-　　　　       | with h handle e                     ハンドル
+　　　値  v  := x                                    変数
+　　　　      | fun x -> e                           関数
+　　　式  e  := v                                    値
+　　　　      | e e                                  関数適用
+　　　　      | op e                                 オペレーション呼び出し
+　　　　      | with h handle e                      ハンドル
 ハンドラ  h  := {return x -> e;                      return 節
 　　　　         op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
 \end{verbatim}
@@ -254,27 +254,28 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \end{verbatim}
 \vspace{-5pt}
 この実行は informal には以下のように進む。以下ではハンドラをそれぞれ \texttt{\LBR{}o\RBR}、\texttt{\LBR{}p\RBR} と短縮する。
-\begin{quote}
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+p(2))}\\
-$\downarrow$ \texttt{eval} で \texttt{p(2)} を実行\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("p", 2, o(1)+[.]))}\\
-$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Some} のパターン)\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+(2-1))}\\
-$\downarrow$ \texttt{eval} で \texttt{2-1} を実行\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+1)}\\
-$\downarrow$ \texttt{eval} で \texttt{o(1)} を実行\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("o", 1, [.]+1))}\\
-$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{None} のパターン)\\
-\texttt{with \LBR{}o\RBR{} handle OpCall ("o", 1, with \LBR{}p\RBR{} handle [.]+1)}\\
-$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Some} のパターン)\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle (1*3)+1)}\\
-$\downarrow$ \texttt{eval} で \texttt{(1*3)+1} を実行\\
-\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle 4}\\
-$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Return} のパターン)\\
-\texttt{with \LBR{}o\RBR{} handle 4}\\
-$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Return} のパターン)\\
-\texttt{4}
-\end{quote}
+\vspace{5pt}
+\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+p(2))}\\
+\hspace{20pt}$\downarrow$ \texttt{eval} で \texttt{p(2)} を実行\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("p", 2, o(1)+[.]))}\\
+\hspace{20pt}$\downarrow$ \texttt{apply\US{}handler} で \texttt{\LBR{}return x -> x; p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Some} のパターン)\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+(2-1))}\\
+\hspace{20pt}$\downarrow$ \texttt{eval} で \texttt{2-1} を実行\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+1)}\\
+\hspace{20pt}$\downarrow$ \texttt{eval} で \texttt{o(1)} を実行\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("o", 1, [.]+1))}\\
+\hspace{20pt}$\downarrow$ \texttt{apply\US{}handler} で \texttt{\LBR{}return x -> x; p(x;k) -> k (x-1)\RBR} の処理 (\texttt{None} のパターン)\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle OpCall ("o", 1, with \LBR{}p\RBR{} handle [.]+1)}\\
+\hspace{20pt}$\downarrow$ \texttt{apply\US{}handler} で \texttt{\LBR{}return x -> x; o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Some} のパターン)\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle (1*3)+1)}\\
+\hspace{20pt}$\downarrow$ \texttt{eval} で \texttt{(1*3)+1} を実行\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle 4})\\
+\hspace{20pt}$\downarrow$ \texttt{apply\US{}handler} で \texttt{\LBR{}return x -> x; p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Return} のパターン)\\
+\hspace{20pt}\texttt{with \LBR{}o\RBR{} handle 4}\\
+\hspace{20pt}$\downarrow$ \texttt{apply\US{}handler} で \texttt{\LBR{}return x -> x; o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Return} のパターン)\\
+\hspace{20pt}\texttt{4}
+\vspace{5pt}
 
 これまで、algebraic effect handlers の意味論は small step のもの
 \cite{10.1145/2500365.2500590, PRETNAR201519}
