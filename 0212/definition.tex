@@ -121,7 +121,56 @@ and a = Return of v                      (* 値になった *)
 また、\texttt{a} は \texttt{handle} 節内の式の実行が正常終了したのか
 オペレーション呼び出しだったのかを示す型である。
 
+\begin{figure}
+\begin{spacing}{0.9}
+  % code/1cps/eval.ml より
+  % 2マスずつインデントするように書き換えた
+\begin{verbatim}
+(* CPS インタプリタ *)
+let rec eval (exp : e) (k : k) : a = match exp with
+  | Val (v) -> k v                           (* 継続に値を渡す *)
+  | App (e1, e2) ->
+    eval e2 (fun v2 ->                       (* FApp2 に変換される関数 *)
+      eval e1 (fun v1 -> match v1 with       (* FApp1 に変換される関数 *)
+        | Fun (x, e) ->
+          let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
+          eval reduct k
+        | Cont (cont_value) -> (cont_value k) v2
+          (* 現在の継続と継続値が保持するメタ継続を合成して値を渡す *)
+        | _ -> failwith "type error"))
+  | Op (name, e) ->
+    eval e (fun v -> OpCall (name, v, fun v -> k v))  (* FOp に変換される関数 *)
+  | With (h, e) ->
+    let a = eval e (fun v -> Return v) in    (* FId に変換される関数、空の継続 *)
+    apply_handler k h a               (* handle 節内の実行結果をハンドラで処理 *)
 
+(* handle 節内の実行結果をハンドラで処理する関数 *)
+and apply_handler (k : k) (h : h) (a : a) : a = match a with
+  | Return v ->                         (* handle 節内が値 v を返したとき *)
+    (match h with {return = (x, e)} ->  (* {return x -> e; ...} として *)
+      let reduct = subst e [(x, v)] in  (* e[v/x] に簡約される *)
+      eval reduct k)                    (* e[v/x] を実行 *)
+  | OpCall (name, v, m) ->              (* オペレーション呼び出しがあったとき *)
+    (match search_op name h with
+      | None ->                         (* ハンドラで定義されていない場合、 *)
+        OpCall (name, v, (fun v ->      (* OpCall の継続の後に現在の継続を合成 *)
+          let a' = m v in
+          apply_handler k h a'))
+      | Some (x, y, e) ->               (* ハンドラで定義されている場合、 *)
+        let cont_value =
+          Cont (fun k'' -> fun v ->     (* 適用時にその後の継続を受け取って合成 *)
+            let a' = m v in
+            apply_handler k'' h a') in
+        let reduct = subst e [(x, v); (y, cont_value)] in
+        eval reduct k)
+
+(* 初期継続を渡して実行を始める *)
+let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換される関数 *)
+\end{verbatim}
+\caption{継続渡し形式で書かれたインタプリタ}
+\label{figure:1cps}
+\end{spacing}
+\end{figure}
 
 図 \ref{figure:syntax} の言語に
 対する call-by-value かつ right-to-left のインタプリタを
@@ -136,57 +185,6 @@ and a = Return of v                      (* 値になった *)
 と \texttt{search\_op "op2" h} は \texttt{None} を返し
 \texttt{search\_op "op1" h} は \texttt{Some ("y", "k", App (Var "k", Var
 "y"))} を返す。
-
-\begin{figure}
-\begin{spacing}{0.9}
-  % code/1cps/eval.ml より
-  % 2マスずつインデントするように書き換えた
-\begin{verbatim}
-(* CPS インタプリタ *)
-let rec eval (exp : e) (k : k) : a = match exp with
-  | Val (v) -> k v  (* 継続に値を渡す *)
-  | App (e1, e2) ->
-    eval e2 (fun v2 ->  (* FApp2 に変換される関数 *)
-      eval e1 (fun v1 -> match v1 with  (* FApp1 に変換される関数 *)
-        | Fun (x, e) ->
-          let reduct = subst e [(x, v2)] in  (* e[v2/x] *)
-          eval reduct k
-        | Cont (cont_value) -> (cont_value k) v2
-          (* 現在の継続と継続値が保持するメタ継続を合成して値を渡す *)
-        | _ -> failwith "type error"))
-  | Op (name, e) ->
-    eval e (fun v -> OpCall (name, v, fun v -> k v))  (* FOp に変換される関数 *)
-  | With (h, e) ->
-    let a = eval e (fun v -> Return v) in  (* FId に変換される関数、空の継続 *)
-    apply_handler k h a  (* handle 節内の実行結果をハンドラで処理 *)
-
-(* handle 節内の実行結果をハンドラで処理する関数 *)
-and apply_handler (k : k) (h : h) (a : a) : a = match a with
-  | Return v ->                         (* handle 節内が値 v を返したとき *)
-    (match h with {return = (x, e)} ->  (* {return x -> e; ...} として *)
-      let reduct = subst e [(x, v)] in  (* e[v/x] に簡約される *)
-      eval reduct k)                    (* e[v/x] を実行 *)
-  | OpCall (name, v, m) ->           (* オペレーション呼び出しがあったとき *)
-    (match search_op name h with
-      | None ->                      (* ハンドラで定義されていない場合、 *)
-        OpCall (name, v, (fun v ->   (* OpCall の継続の後に現在の継続を合成 *)
-          let a' = m v in
-          apply_handler k h a'))
-      | Some (x, y, e) ->            (* ハンドラで定義されている場合、 *)
-        let cont_value =
-          Cont (fun k'' -> fun v ->  (* 適用時にその後の継続を受け取って合成 *)
-            let a' = m v in
-            apply_handler k'' h a') in
-        let reduct = subst e [(x, v); (y, cont_value)] in
-        eval reduct k)
-
-(* 初期継続を渡して実行を始める *)
-let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換される関数 *)
-\end{verbatim}
-\caption{継続渡し形式で書かれたインタプリタ}
-\label{figure:1cps}
-\end{spacing}
-\end{figure}
 
 このインタプリタは、\texttt{handle} 節内の実行については普通の CPS に
 なっており、継続である \texttt{k} は「直近の \texttt{handle} までの継続」で
@@ -262,8 +260,8 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \item
 呼び出されたオペレーション \texttt{"p"} がハンドラ \texttt{h} の中に存在するので、 \texttt{"p"}
    に対応する式が実行される。具体的には \texttt{k (x-1)} が $\texttt{x}=\texttt{2}, \texttt{k}=\texttt{cont\US{}value}$
-   のもとで実行される。ここで \texttt{cont\US{}value k} は
-   \texttt{(with {p(x; k) -> k (x-1)} handle o(1)+[.])}
+   のもとで実行される。ここで \texttt{cont\US{}value} は
+   \texttt{k'' (with {p(x; k) -> k (x-1)} handle o(1)+[.])}
    となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
    \texttt{cont\US{}value} に \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} を処理するハンドラが含まれるのは
    deep handler の特徴である。
@@ -286,11 +284,11 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 \item
 今回は呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在するの
    で、\texttt{"o"} に対応する式が実行される。具体的には \texttt{k (x*3)} が $\texttt{x}=\texttt{1},
-   \texttt{k}=\texttt{cont\US{}value}$ のもとで実行される。ここで \texttt{cont\US{}value k} は
-   \texttt{(with \LBR{}o(x; k) -> k (x*3)\RBR handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1))}
+   \texttt{k}=\texttt{cont\US{}value}$ のもとで実行される。ここで \texttt{cont\US{}value} は
+   \texttt{k'' (with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1))}
    となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
 \item
-\texttt{k (x*3)} を実行すると、全体として式は
+\texttt{k (x*3)} を実行すると、式は
    \texttt{with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle 3+1)}
    となリ、全体としては \texttt{4} が返る。
 \end{enumerate}
