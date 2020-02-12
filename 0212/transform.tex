@@ -85,11 +85,11 @@ let interpreter (e : e) : a = eval e FId
 機械的に行うことができる。
 
 具体的に図\ref{figure:1cps}のプログラムの継続 \texttt{k} 型の$\lambda$式を
-非関数化するには次のようにする。結果は図 \ref{figure:2defun}のようになる。
+非関数化するには次のようにする。
 
 \begin{enumerate}
 \item 継続を表す$\lambda$式をコンストラクタに置き換える。その際、$\lambda$式内の自由変数はコンストラクタの引数にする。
-その結果、得られるデータ構造は図 \ref{figure:2defun} の型 \texttt{k} のようになる。
+その結果、得られるデータ構造は図 \ref{figure:2defun} の \texttt{k} 型のようになる。
 図 \ref{figure:1cps}の中には、コメントとしてどの関数がどのコンストラク
 タに置き換わったのかが書かれている。
 \item 関数を表すコンストラクタと引数を受け取って中身を実行するような apply 関数を定義する。
@@ -97,6 +97,9 @@ let interpreter (e : e) : a = eval e FId
 \item $\lambda$式を呼び出す部分を、apply 関数にコンストラクタと引数を渡すように変更する。
 \end{enumerate}
 
+非関数化の結果は図 \ref{figure:2defun}のようになる。
+ただし関数 \texttt{apply\US{}handler} は \texttt{k} 型の$\lambda$式を含まないので
+図 \ref{figure:1cps} のまま変わらない。
 
 非関数化した後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
 てオペレーション呼び出しの引数を実行するフレーム \texttt{FOp} が加わっ
