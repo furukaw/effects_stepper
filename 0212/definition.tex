@@ -25,9 +25,9 @@ handle 10 + op(3)
 オペレーション呼び出しというのは副作用を起こす命令で、
 直感的にはここで例外 \texttt{op} を引数 3 で起こすのに近い。
 本論文では、使用するオペレーションは全て既に宣言されていると仮定する。
-またこれ以降、\texttt{with h handle e} の中の式 \texttt{e} を「handle 節」と呼ぶ。
+またこれ以降、\texttt{with h handle e} の中の式 \texttt{e} を「\texttt{handle} 節」と呼ぶ。
 
-オペレーション呼び出しが起こると、プログラムの制御は handle 節に移る。
+オペレーション呼び出しが起こると、プログラムの制御は \texttt{handle} 節に移る。
 ハンドラは正常終了を処理する部分 \texttt{return x -> ...}\ と
 オペレーション呼び出しを処理する部分に分かれている。
 正常終了する部分は
@@ -56,7 +56,7 @@ handle 10 + op(3)
 
 algebraic effect handlers の特徴は、オペレーション呼び出しの意味がハンドラで決
 まる部分にある。\texttt{op(3)} とした時点ではこの処理の内容は未定だ
-が、handle 節に \texttt{k (x + 1)} と書かれているため、
+が、\texttt{handle} 節に \texttt{k (x + 1)} と書かれているため、
 結果として \texttt{op} は 1 を加えるような作用だったことになる。
 
 \subsection{構文の定義}
@@ -117,7 +117,7 @@ and a = Return of v                      (* 値になった *)
 オペレーション呼び出しにより非局所的に制御が移るので、
 意味論は CPS インタプリタを定義することで与える。
 対象言語の OCaml による定義を図 \ref{figure:syntax} に示す。
-ここで \texttt{k} は各 handle 節の限定継続を表す。
+ここで \texttt{k} は各 \texttt{handle} 節の限定継続を表す。
 また、\texttt{a} は \texttt{handle} 節内の式の実行が正常終了したのか
 オペレーション呼び出しだったのかを示す型である。
 
@@ -257,7 +257,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 まず \texttt{p(2)} が実行されるが、このときに \texttt{eval} が返す値は
    \texttt{OpCall ("p", 2, o(1)+[.])}
    のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
-   が呼ばれる。このとき \texttt{k} は内側の with 文から外側の with 文までの間の
+   が呼ばれる。このとき \texttt{k} は内側の \texttt{with} 文から外側の \texttt{with} 文までの間の
    継続（この場合は空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
 \item
 呼び出されたオペレーション \texttt{"p"} がハンドラ \texttt{h} の中に存在するので、 \texttt{"p"}
@@ -275,13 +275,13 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 次に \texttt{o(1)} が実行されるが、このときに \texttt{eval} が返す値は
    \texttt{OpCall ("o", 1, [.]+1)}
    のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
-   が呼ばれる。このとき \texttt{k} は内側の with 文から外側の with 文までの間の
+   が呼ばれる。このとき \texttt{k} は内側の \texttt{with} 文から外側の \texttt{with} 文までの間の
    継続（空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
 \item
 呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在しないので、
    \texttt{OpCall ("o", 1, with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1)}
-   が値として返される。これが、外側の with handle 文の \texttt{a} の値となり、
-   \texttt{apply\US{}handler} が呼ばれる。このとき \texttt{k} は外側の with 文の外の継続
+   が値として返される。これが、外側の \texttt{with handle} 文の \texttt{a} の値となり、
+   \texttt{apply\US{}handler} が呼ばれる。このとき \texttt{k} は外側の \texttt{with} 文の外の継続
    （空）、\texttt{h} は \texttt{\LBR{}o(x; k) -> k (x*3)\RBR} である。
 \item
 今回は呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在するの

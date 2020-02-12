@@ -12,7 +12,7 @@
 インタプリタを変換してコンテキストの情報を得るには
 まずCPS変換をして次に非関数化をすればよいが、
 \ref{section:definition}節で示したインタプリタはオペレーション呼び出しをサ
-ポートするため handle 節内の実行について最初から CPS で書かれている。
+ポートするため \texttt{handle} 節内の実行について最初から CPS で書かれている。
 したがって、ここではまず非関数化をかける。
 
 非関数化というのは、高階関数を１階のデータ構造で表現する方法である。高
@@ -40,13 +40,13 @@
 \begin{spacing}{0.9}
   % code/2defun/syntax.ml より
 \begin{verbatim}
-(* handle 内の継続 *)
+(* handle 節内の継続 *)
 type k = FId                (* [.] *)
        | FApp2 of e * k     (* [e [.]] *)
        | FApp1 of k * v     (* [[.] v] *)
        | FOp of string * k  (* [op [.]] *)
 
-(* handle 内の実行結果 *)
+(* handle 節内の実行結果 *)
 type a = Return of v                            (* 前と同じ *)
        | OpCall of string * v * (v -> k2 -> a)  (* 継続をとるように変更 *)
 \end{verbatim}
@@ -96,10 +96,10 @@ let interpreter (e : e) : a = eval e FId
 
 非関数化した後の継続の型を見ると、ラムダ計算の通常の評価文脈に加え
 てオペレーション呼び出しの引数を実行するフレーム \texttt{FOp} が加わっ
-ていることがわかる。これが、handle 節内の実行のコンテキスト情報である。
+ていることがわかる。これが、\texttt{handle} 節内の実行のコンテキスト情報である。
 
 ここで、\texttt{OpCall} の第３引数は非関数化されていないことに注意しよ
-う。この部分は handle 節内の継続とは限らないので、ここでは非関数化せずに
+う。この部分は \texttt{handle} 節内の継続とは限らないので、ここでは非関数化せずに
 もとのままとしている。
 
 非関数化の操作自体は機械的だが、どの部分を非関数化するかを判断するには
@@ -114,7 +114,7 @@ let interpreter (e : e) : a = eval e FId
 と最終的に得られるコンテキスト情報がきれいなリストのリストの形にはなら
 なくなってしまう。
 
-handle 節内の評価文脈を表すデータ構造は非関数化により導くことができたが、
+\texttt{handle} 節内の評価文脈を表すデータ構造は非関数化により導くことができたが、
 図 \ref{figure:2defun}のインタプリタはオペレーション呼び出しなどの実
 装で継続を非末尾の位置で使っており純粋な CPS 形式にはなっていないため、
 全体のコンテキストは得られていない。そのため、このコンテキストを使って
@@ -225,13 +225,13 @@ and apply_handler (k : k) (h : h) (a : a) (k2 : k2) : a = match a with
 この非関数化によって、引数 \texttt{k} と引数 \texttt{k2} からコンテキ
 スト全体の情報が得られるようになった。
 ここで、得られたコンテキストの情報を整理しておこう。
-\texttt{k} は handle 節内のコンテキストを示している。
+\texttt{k} は \texttt{handle} 節内のコンテキストを示している。
 \texttt{FId} 以外はいずれの構成子も \texttt{k} を引数にとっているの
 で、これは \texttt{FId} を空リストととらえれば評価文脈のリストと考える
 ことができる。
 \texttt{k2} も同様に \texttt{h} と \texttt{k} が連なったリストと考える
 ことができる。
-全体として「with handle 式に囲まれた評価文脈のリスト」のリストになっており、
+全体として「\texttt{with handle} 式に囲まれた評価文脈のリスト」のリストになっており、
 直感に合ったハンドラによって区切られたコンテキストが得られていることが
 わかる。
 
@@ -262,7 +262,7 @@ algebraic effect handlers の入った体系の抽象機械で継続を表すデ
 
 図 \ref{figure:5memo}を見ると \texttt{apply\_in} では普通の関数呼び出しと継続呼び出しが
 \texttt{memo} されている。また、\texttt{apply\_handler} では
-handle 節の実行が正常終了した場合とオペレーション呼び出しが起きた場合に
+\texttt{handle} 節の実行が正常終了した場合とオペレーション呼び出しが起きた場合に
 それぞれ \texttt{memo} 関数が挿入されている。
 また、オペレーション呼び出しが処理されず外側の \texttt{with handle} 文
 に制御を移す際には、図 \ref{figure:compose}に示される関数を使って
@@ -375,7 +375,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 
 もとの CPS インタプリタの型定義に必要なコンテキストの情報を加えた定義
 が図 \ref{figure:k_6cps}になる。
-ここで、\texttt{c} と \texttt{c2} がそれぞれ handle 節内と全体のコンテキ
+ここで、\texttt{c} と \texttt{c2} がそれぞれ \texttt{handle} 節内と全体のコンテキ
 ストの情報で、前節までの非関数化によって得られたものである。
 一方、\texttt{k} はもとからある高階の継続の型である。
 継続 \texttt{k} は、簡約ごとにプログラム全体を表示するので、
@@ -384,7 +384,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 このデータ定義を使って、もとの CPS インタプリタをステッパに変換したの
 が図 \ref{figure:6cps}である。
 図 \ref{figure:6cps} にある関数 \texttt{plug\_all :\ e -> (k * k2) -> e} は
-式と「handle 節内のコンテキストとそれより外のコンテキストのペア」を受け取って
+式と「\texttt{handle} 節内のコンテキストとそれより外のコンテキストのペア」を受け取って
 プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる
 (実装は付録の図\ref{figure:plug_all} に示す)。
 このインタプリタは、もとの CPS インタプリタにコンテキストの情報として
