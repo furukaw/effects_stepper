@@ -181,7 +181,7 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v}
 と値 \texttt{cont\US{}value} を代入した式を返す。
 関数 \texttt{search\US{}op} はハンドラ内のオペレーションを検索する関数
-で、例えば \texttt{\{return x -> x; op1(y, k) -> k y\}} を表す
+で、例えば \texttt{\LBR{}return x -> x; op1(y, k) -> k y\RBR} を表す
 データを \texttt{h} とする
 と \texttt{search\US{}op "op2" h} は \texttt{None} を返し
 \texttt{search\US{}op "op1" h} は \texttt{Some ("y", "k", App (Var "k", Var
