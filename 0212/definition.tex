@@ -70,17 +70,14 @@ algebraic effect handlers の特徴は、オペレーション呼び出しの意
 \begin{figure}[t]
 \begin{spacing}{0.9}
 \begin{verbatim}
-v  :=                                      (値)
-      x                                    変数
-    | fun x -> e                           関数
-e  :=                                      (式)
-      v                                    値
-    | e e                                  関数適用
-    | op e                                 オペレーション呼び出し
-    | with h handle e                      ハンドル
-h  :=                                      (ハンドラ)
-      {return x -> e;                      return 節
-       op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
+値　　　  v   := x                                   変数
+　　　　       | fun x -> e                          関数
+式　　　  e   := v                                   値
+　　　　       | e e                                 関数適用
+　　　　       | op e                                オペレーション呼び出し
+　　　　       | with h handle e                     ハンドル
+ハンドラ  h  := {return x -> e;                      return 節
+　　　　         op(x; k) -> e; ...; op(x; k) -> e}  オペレーション節(0個以上)
 \end{verbatim}
 \end{spacing}
 \caption{対象言語の構文}
@@ -165,7 +162,7 @@ and apply_handler (k : k) (h : h) (a : a) : a = match a with
           Cont (fun k'' -> fun v ->     (* 適用時にその後の継続を受け取って合成 *)
             let a' = m v in
             apply_handler k'' h a') in
-        let reduct = subst e [(x, v); (y, cont_value)] in
+        let reduct = subst e [(x, v);ha (y, cont_value)] in
         eval reduct k)
 
 (* 初期継続を渡して実行を始める *)
@@ -180,14 +177,14 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 対する call-by-value かつ right-to-left のインタプリタを
 図 \ref{figure:1cps} に定義する。
 ただし、関数 \texttt{subst :\ e -> (string * v) list -> e} は代入のための
-関数であり、\texttt{subst e [(x, v); (k, cont\_value)]} は \texttt{e}
+関数であり、\texttt{subst e [(x, v); (k, cont\US{}value)]} は \texttt{e}
 の中の変数 \texttt{x} と変数 \texttt{k} に同時にそれぞれ値 \texttt{v}
-と値 \texttt{cont\_value} を代入した式を返す。
-関数 \texttt{search\_op} はハンドラ内のオペレーションを検索する関数
+と値 \texttt{cont\US{}value} を代入した式を返す。
+関数 \texttt{search\US{}op} はハンドラ内のオペレーションを検索する関数
 で、例えば \texttt{\{return x -> x; op1(y, k) -> k y\}} を表す
 データを \texttt{h} とする
-と \texttt{search\_op "op2" h} は \texttt{None} を返し
-\texttt{search\_op "op1" h} は \texttt{Some ("y", "k", App (Var "k", Var
+と \texttt{search\US{}op "op2" h} は \texttt{None} を返し
+\texttt{search\US{}op "op1" h} は \texttt{Some ("y", "k", App (Var "k", Var
 "y"))} を返す。
 
 このインタプリタは、\texttt{handle} 節内の実行については普通の CPS に
@@ -204,10 +201,10 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 た場合（\texttt{eval} の下から4行目）は引数 \texttt{e} を実行後、
 結果を継続 \texttt{k} に渡すことなく \texttt{OpCall} を返している。
 これが \texttt{handle} 節の結果となり、\texttt{eval} の最下行で
-\texttt{apply\_handler} に渡される。
+\texttt{apply\US{}handler} に渡される。
 一方、\texttt{handle} 節内の実行が正常終了した場合は、
 初期継続 \texttt{(fun x -> Return x)} に結果が返り、それが
-\texttt{apply\_handler} に渡される。
+\texttt{apply\US{}handler} に渡される。
 
 ここで、オペレーション呼び出しで返される \texttt{OpCall} の第 3 引数
 が \texttt{k} ではなく \texttt{fun v -> k v} のように $\eta$-expand さ
@@ -216,11 +213,11 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 はより広い継続を指すことがあり両者を区別したいためである。これについて
 は、次節で非関数化を施す際に詳しく述べる。
 
-\texttt{apply\_handler} は、そのときの継続 \texttt{k}、
+\texttt{apply\US{}handler} は、そのときの継続 \texttt{k}、
 ハンドラ \texttt{h}、そして
 \texttt{handle} 節内の実行結果 \texttt{a} を受け取って
 ハンドラの処理をする。
-関数 \texttt{apply\_handler} の動作は \texttt{handle} 節の実行結果とハ
+関数 \texttt{apply\US{}handler} の動作は \texttt{handle} 節の実行結果とハ
 ンドラの内容によって3種類ある。
 
 \begin{enumerate}
@@ -232,20 +229,20 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 く、より広い継続となっている。
 
 \item \texttt{handle} 節がオペレーション呼び出し \texttt{OpCall (name, v, m)} になった場合で、そのオペレーション \texttt{name} がハンドラ内で定義されていた場合：そのハンドラの定義 \texttt{name (x; y) -> e} を参照し、
-\texttt{e[v/x, cont\_value/y]} を実行する。
-（\texttt{cont\_value} については、以下の説明を参照。）
+\texttt{e[v/x, cont\US{}value/y]} を実行する。
+（\texttt{cont\US{}value} については、以下の説明を参照。）
 \end{enumerate}
 
 オペレーション呼び出しを処理する際に \texttt{k} に束縛する
-限定継続 \texttt{cont\_value} は、「オペレーション呼び出し時の
+限定継続 \texttt{cont\US{}value} は、「オペレーション呼び出し時の
 限定継続 \texttt{m}」に「現在のハンドラ \texttt{h}」と
-「\texttt{cont\_value} が呼び出された時の継続 \texttt{k''}」
+「\texttt{cont\US{}value} が呼び出された時の継続 \texttt{k''}」
 を合成したものである。
 
 このようにして作られた限定継続が呼び出されるのは \texttt{eval} の
 \texttt{App} の \texttt{Cont} のケースである。
-\texttt{cont\_value} は、この継続が呼び出された時点での
-限定継続が必要なので、それを \texttt{cont\_value k} のように渡してから
+\texttt{cont\US{}value} は、この継続が呼び出された時点での
+限定継続が必要なので、それを \texttt{cont\US{}value k} のように渡してから
 値 \texttt{v2} を渡している。
 
 オペレーション呼び出しの部分を、例を使って説明する。以下のプログラムを

@@ -32,7 +32,7 @@
 図 \ref{figure:1cps}の中には、コメントとしてどの関数がどのコンストラク
 タに置き換わったのかが書かれている。
 \item 関数を表すコンストラクタと引数を受け取って中身を実行するような apply 関数を定義する。
-これは、図 \ref{figure:2defun}では \texttt{apply\_in} と呼ばれている。
+これは、図 \ref{figure:2defun}では \texttt{apply\US{}in} と呼ばれている。
 \item $\lambda$式を呼び出す部分を、apply 関数にコンストラクタと引数を渡すように変更する。
 \end{enumerate}
 
@@ -262,7 +262,7 @@ let rec compose_k2 k2_in h (k_out, k2_out) = match k2_in with
 のプログラムを出力するようにするとステッパが得られる。具体的には、簡約が起こる部分でプログラム全
 体を再構成し表示するようにする。図\ref{figure:5memo}
 が表示を行う関数 \texttt{memo} を
-足した後の関数 \texttt{apply\_in} と \texttt{apply\_handler}
+足した後の関数 \texttt{apply\US{}in} と \texttt{apply\US{}handler}
 である。
 (他の関数は簡約している部分が無いので図 \ref{figure:4defun} と同じになる。)
 図 \ref{figure:5memo} 中の灰色の部分が出力のために追加された部分である。
@@ -273,11 +273,11 @@ let rec compose_k2 k2_in h (k_out, k2_out) = match k2_in with
 また、本論文では継続を \texttt{fun x => ...\ x ...} と表すこととし、
 その表示のために各継続値が引数名の情報を持つ必要がある。
 この引数名は継続を切り取って継続値 \texttt{Cont} が作られる時 (図 \ref{figure:5memo} の下から6行目) に、
-プログラム中の他の変数と重複しない変数名を返す関数 \texttt{gen\_var\_name :\ unit -> string}
+プログラム中の他の変数と重複しない変数名を返す関数 \texttt{gen\US{}var\US{}name :\ unit -> string}
 を用いて生成する。
 
-図 \ref{figure:5memo}を見ると \texttt{apply\_in} では普通の関数呼び出しと継続呼び出しが
-\texttt{memo} されている。また、\texttt{apply\_handler} では
+図 \ref{figure:5memo}を見ると \texttt{apply\US{}in} では普通の関数呼び出しと継続呼び出しが
+\texttt{memo} されている。また、\texttt{apply\US{}handler} では
 \texttt{handle} 節の実行が正常終了した場合とオペレーション呼び出しが起きた場合に
 それぞれ \texttt{memo} 関数が挿入されている。
 また、オペレーション呼び出しが処理されず外側の \texttt{with handle} 文
@@ -289,8 +289,8 @@ let rec compose_k2 k2_in h (k_out, k2_out) = match k2_in with
   % code/6cps/syntax.ml より
 \begin{verbatim}
 (* 値 *)
-type v = ...                                        (* 前と同じ *)
-       | Cont of string * (c * c2) * ((c * k) -> k) (* 継続 *)
+type v = ...                                         (* 前と同じ *)
+       | Cont of string * (c * c2) * ((c * k) -> k)  (* 継続 *)
 (* handle 内の実行結果 *)
 and a = Return of v                          (* 値になった *)
       | OpCall of string * v * (c * c2) * k  (* オペレーションが呼び出された *)
@@ -384,7 +384,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 
 このデータ定義を使って、もとの CPS インタプリタをステッパに変換したの
 が図 \ref{figure:6cps}である。
-図 \ref{figure:6cps} にある関数 \texttt{plug\_all :\ e -> (k * k2) -> e} は
+図 \ref{figure:6cps} にある関数 \texttt{plug\US{}all :\ e -> (k * k2) -> e} は
 式と「\texttt{handle} 節内のコンテキストとそれより外のコンテキストのペア」を受け取って
 プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる (実装は付録の図 \ref{figure:plug_all} に示す)。
 このインタプリタは、もとの CPS インタプリタにコンテキストの情報として

@@ -9,11 +9,11 @@ type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
 (* 式 *)
 and e = Val of v            (* 値 *)
-       | App of e * e       (* e e *)
+      | App of e * e       (* e e *)
 
 (* インタプリタ *)
 let rec eval (exp : e) : v = match exp with
-  | Val (v) -> v  (* 値ならそのまま返す *)
+  | Val (v) -> v                         (* 値ならそのまま返す *)
   | App (e1, e2) ->
     let v2 = eval e2 in                  (* 引数部分を実行 *)
     let v1 = eval e1 in                  (* 関数部分を実行 *)
