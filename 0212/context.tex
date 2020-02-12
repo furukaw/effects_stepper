@@ -36,19 +36,19 @@ type v = Var of string      (* x *)
        | Fun of string * e  (* fun x -> e *)
 
 (* 式 *)
-and e = Val of v      (* 値 *)
-       | App of e * e  (* e e *)
+and e = Val of v            (* 値 *)
+       | App of e * e       (* e e *)
 
 (* インタプリタ *)
 let rec eval (exp : e) : v = match exp with
   | Val (v) -> v  (* 値ならそのまま返す *)
   | App (e1, e2) ->
-    let v2 = eval e2 in  (* 引数部分を実行 *)
-    let v1 = eval e1 in  (* 関数部分を実行 *)
+    let v2 = eval e2 in                  (* 引数部分を実行 *)
+    let v1 = eval e1 in                  (* 関数部分を実行 *)
     let reduct = match v1 with
       | Fun (x, e) -> subst e [(x, v2)]  (* 代入 e[v2/x] *)
-      | _ -> failwith "type error" in  (* 関数部分が関数でなければ型エラー *)
-    eval reduct  (* 代入後の式を実行 *)
+      | _ -> failwith "type error" in    (* 関数部分が関数でなければ型エラー *)
+    eval reduct                          (* 代入後の式を実行 *)
 \end{verbatim}
 \caption{型無し$\lambda$計算とそのインタプリタ}
 \label{figure:lambda}
@@ -89,7 +89,7 @@ let rec eval (exp : e) (c : c) : v = match exp with
     let reduct = match v1 with
       | Fun (x, e) -> subst e [(x, v2)]
       | _ -> failwith "type error" in
-    memo redex reduct c;  (* コンテキストを利用して式全体を出力 *)
+    memo redex reduct c;                 (* コンテキストを利用して式全体を出力 *)
     eval reduct c
 
 (* 実行を始める *)
