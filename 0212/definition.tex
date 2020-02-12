@@ -249,7 +249,8 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 考える。（ここで、数字と四則演算がサポートされていると仮定する。）
 \vspace{-5pt}
 \begin{verbatim}
-  with {o(x;k) -> k (x*3)} handle (with {p(x;k) -> k (x-1)} handle o(1)+p(2))
+  with {return x -> x; o(x;k) -> k (x*3)}
+  handle (with {return x -> x; p(x;k) -> k (x-1)} handle o(1)+p(2))
 \end{verbatim}
 \vspace{-5pt}
 この実行は informal には以下のように進む。以下ではハンドラをそれぞれ \texttt{\LBR{}o\RBR}、\texttt{\LBR{}p\RBR} と短縮する。
