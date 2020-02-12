@@ -247,51 +247,30 @@ let interpreter (e : e) : a = eval e (fun v -> Return v) (* FIdに変換され�
 オペレーション呼び出しの部分を、例を使って説明する。以下のプログラムを
 考える。（ここで、数字と四則演算がサポートされていると仮定する。）
 \begin{verbatim}
-  with {o(x; k) -> k (x*3)} handle (with {p(x; k) -> k (x-1)} handle o(1)+p(2))
+  with {o(x;k) -> k (x*3)} handle (with {p(x;k) -> k (x-1)} handle o(1)+p(2))
 \end{verbatim}
-この実行は informal には以下のように進む。
-\begin{enumerate}
-\item
-まず \texttt{p(2)} が実行されるが、このときに \texttt{eval} が返す値は
-   \texttt{OpCall ("p", 2, o(1)+[.])}
-   のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
-   が呼ばれる。このとき \texttt{k} は内側の \texttt{with} 文から外側の \texttt{with} 文までの間の
-   継続（この場合は空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
-\item
-呼び出されたオペレーション \texttt{"p"} がハンドラ \texttt{h} の中に存在するので、 \texttt{"p"}
-   に対応する式が実行される。具体的には \texttt{k (x-1)} が $\texttt{x}=\texttt{2}, \texttt{k}=\texttt{cont\US{}value}$
-   のもとで実行される。ここで \texttt{cont\US{}value} は
-   \texttt{k'' (with {p(x; k) -> k (x-1)} handle o(1)+[.])}
-   となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
-   \texttt{cont\US{}value} に \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} を処理するハンドラが含まれるのは
-   deep handler の特徴である。
-\item
-\texttt{k (x-1)} を実行すると、全体として式は
-   \texttt{with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with\\\LBR{}p(x;k) -> k (x-1)\RBR{} handle o(1)+1)}
-   となる。
-\item
-次に \texttt{o(1)} が実行されるが、このときに \texttt{eval} が返す値は
-   \texttt{OpCall ("o", 1, [.]+1)}
-   のようになる。これが \texttt{eval} の下から２行目の \texttt{a} となって \texttt{apply\US{}handler}
-   が呼ばれる。このとき \texttt{k} は内側の \texttt{with} 文から外側の \texttt{with} 文までの間の
-   継続（空）、\texttt{h} は \texttt{\LBR{}p(x; k) -> k (x-1)\RBR} である。
-\item
-呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在しないので、
-   \texttt{OpCall ("o", 1, with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1)}
-   が値として返される。これが、外側の \texttt{with handle} 文の \texttt{a} の値となり、
-   \texttt{apply\US{}handler} が呼ばれる。このとき \texttt{k} は外側の \texttt{with} 文の外の継続
-   （空）、\texttt{h} は \texttt{\LBR{}o(x; k) -> k (x*3)\RBR} である。
-\item
-今回は呼び出されたオペレーション \texttt{"o"} がハンドラ \texttt{h} の中に存在するの
-   で、\texttt{"o"} に対応する式が実行される。具体的には \texttt{k (x*3)} が $\texttt{x}=\texttt{1},
-   \texttt{k}=\texttt{cont\US{}value}$ のもとで実行される。ここで \texttt{cont\US{}value} は
-   \texttt{k'' (with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle [.]+1))}
-   となる。\texttt{cont\US{}value} の定義にある \texttt{k''} は この \texttt{cont\US{}value} が呼び出されるときの継続である。
-\item
-\texttt{k (x*3)} を実行すると、式は
-   \texttt{with \LBR{}o(x; k) -> k (x*3)\RBR{} handle (with \LBR{}p(x; k) -> k (x-1)\RBR{} handle 3+1)}
-   となリ、全体としては \texttt{4} が返る。
-\end{enumerate}
+この実行は informal には以下のように進む。以下ではハンドラをそれぞれ \texttt{\LBR{}o\RBR}、\texttt{\LBR{}p\RBR} と短縮する。
+\begin{quote}
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+p(2))}\\
+$\downarrow$ \texttt{eval} で \texttt{p(2)} を実行\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("p", 2, o(1)+[.]))}\\
+$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Some} のパターン)\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+(2-1))}\\
+$\downarrow$ \texttt{eval} で \texttt{2-1} を実行\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle o(1)+1)}\\
+$\downarrow$ \texttt{eval} で \texttt{o(1)} を実行\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle OpCall ("o", 1, [.]+1))}\\
+$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{None} のパターン)\\
+\texttt{with \LBR{}o\RBR{} handle OpCall ("o", 1, with \LBR{}p\RBR{} handle [.]+1)}\\
+$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Some} のパターン)\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle (1*3)+1)}\\
+$\downarrow$ \texttt{eval} で \texttt{(1*3)+1} を実行\\
+\texttt{with \LBR{}o\RBR{} handle (with \LBR{}p\RBR{} handle 4}\\
+$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}p(x;k) -> k (x-1)\RBR} の処理 (\texttt{Return} のパターン)\\
+\texttt{with \LBR{}o\RBR{} handle 4}\\
+$\downarrow$ \texttt{apply\US{}handler} でハンドラ \texttt{\LBR{}o(x;k) -> k (x*3)\RBR} の処理 (\texttt{Return} のパターン)\\
+\texttt{4}
+\end{quote}
 
 これまで、algebraic effect handlers の意味論は small step のもの
 \cite{10.1145/2500365.2500590, PRETNAR201519}
