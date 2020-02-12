@@ -1,40 +1,51 @@
-Step 0:
-  ((with {return x -> (fun u -> x);
-          Get(u; k) -> (fun s -> ((k s) s));
-          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-    handle (Get (Set (fun b -> b)))) (fun c -> c))
-Step 1:
-  ((fun u -> (((fun y => (with {return x -> (fun u -> x);
-                                Get(u; k) -> (fun s -> ((k s) s));
-                                Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-                          handle (Get y))) (fun a -> a)) (fun b -> b)))
-                         (fun c -> c))
-Step 2:
-  (((fun y => (with {return x -> (fun u -> x);
-                     Get(u; k) -> (fun s -> ((k s) s));
-                     Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-               handle (Get y))) (fun a -> a)) (fun b -> b))
-Step 3:
-  ((with {return x -> (fun u -> x);
-          Get(u; k) -> (fun s -> ((k s) s));
-          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-    handle (Get (fun a -> a))) (fun b -> b))
-Step 4:
-  ((fun s -> (((fun z => (with {return x -> (fun u -> x);
-                                Get(u; k) -> (fun s -> ((k s) s));
-                                Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-                          handle z)) s) s)) (fun b -> b))
-Step 5:
-  (((fun z => (with {return x -> (fun u -> x);
-                     Get(u; k) -> (fun s -> ((k s) s));
-                     Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-               handle z)) (fun b -> b)) (fun b -> b))
-Step 6:
-  ((with {return x -> (fun u -> x);
-          Get(u; k) -> (fun s -> ((k s) s));
-          Set(s; k) -> (fun u -> ((k (fun a -> a)) s))}
-    handle (fun b -> b)) (fun b -> b))
-Step 7:
-  ((fun u -> (fun b -> b)) (fun b -> b))
-Step 8:
-  (fun b -> b)
+Step 0:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set ((Get ()) + 1)))) 0)
+Step 1:  ((fun s ->
+           (((fun y => (with {return x -> (fun _ -> x),
+                              Get(_; k) -> (fun s -> ((k s) s)),
+                              Set(s; k) -> (fun _ -> ((k ()) s))}
+                        handle ((fun _ -> (Get ())) (Set (y + 1))))) s) s)) 0)
+Step 2:  (((fun y => (with {return x -> (fun _ -> x),
+                            Get(_; k) -> (fun s -> ((k s) s)),
+                            Set(s; k) -> (fun _ -> ((k ()) s))}
+                      handle ((fun _ -> (Get ())) (Set (y + 1))))) 0) 0)
+Step 3:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set (0 + 1)))) 0)
+Step 4:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) (Set 1))) 0)
+Step 5:  ((fun _ -> (((fun z => (with {return x -> (fun _ -> x),
+                                       Get(_; k) -> (fun s -> ((k s) s)),
+                                       Set(s; k) -> (fun _ -> ((k ()) s))}
+                                 handle ((fun _ -> (Get ())) z))) ()) 1)) 0)
+Step 6:  (((fun z => (with {return x -> (fun _ -> x),
+                            Get(_; k) -> (fun s -> ((k s) s)),
+                            Set(s; k) -> (fun _ -> ((k ()) s))}
+                      handle ((fun _ -> (Get ())) z))) ()) 1)
+Step 7:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle ((fun _ -> (Get ())) ())) 1)
+Step 8:  ((with {return x -> (fun _ -> x),
+                 Get(_; k) -> (fun s -> ((k s) s)),
+                 Set(s; k) -> (fun _ -> ((k ()) s))}
+           handle (Get ())) 1)
+Step 9:  ((fun s -> (((fun a => (with {return x -> (fun _ -> x),
+                                       Get(_; k) -> (fun s -> ((k s) s)),
+                                       Set(s; k) -> (fun _ -> ((k ()) s))}
+                                 handle a)) s) s)) 1)
+Step 10:  (((fun a => (with {return x -> (fun _ -> x),
+                             Get(_; k) -> (fun s -> ((k s) s)),
+                             Set(s; k) -> (fun _ -> ((k ()) s))}
+                       handle a)) 1) 1)
+Step 11:  ((with {return x -> (fun _ -> x),
+                  Get(_; k) -> (fun s -> ((k s) s)),
+                  Set(s; k) -> (fun _ -> ((k ()) s))}
+            handle 1) 1)
+Step 12:  ((fun _ -> 1) 1)
+Step 13:  1

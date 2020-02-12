@@ -385,8 +385,7 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 が図 \ref{figure:6cps}である。
 図 \ref{figure:6cps} にある関数 \texttt{plug\_all :\ e -> (k * k2) -> e} は
 式と「\texttt{handle} 節内のコンテキストとそれより外のコンテキストのペア」を受け取って
-プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる
-(実装は付録の図\ref{figure:plug_all} に示す)。
+プログラム全体を再構成して返す関数であり、ステップ出力の際にも用いる。
 このインタプリタは、もとの CPS インタプリタにコンテキストの情報として
 引数 \texttt{c} と \texttt{c2} を加え、簡約ごとにプログラムを再構成
 し、ステップ表示するようにしたものである。
@@ -394,4 +393,4 @@ let stepper (e : e) : a = eval e (FId, (fun v c2 -> Return v)) GId
 に非自明な言語構文が入っていても、直接、ステッパを作ることができるよう
 になる。
 図 \ref{figure:6cps} のステッパを実行して得られるステップ列の例は
-付録の図 \ref{figure:step_example} に示す。
+付録の \ref{subsection:step_example} 節に示す。

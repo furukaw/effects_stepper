@@ -1,4 +1,4 @@
 (with handler {return x -> (fun u -> x),
 Get(u; k) -> (fun s -> (k s) s),
-Set(s; k) -> (fun u -> (k (fun a -> a)) s)}
-handle (Get (Set (fun b -> b)))) (fun c -> c)
+Set(s; k) -> (fun u -> (k (fun unit -> unit)) s)}
+handle (fun u -> Get (fun unit -> unit)) (Set ((fun zero -> (fun one -> one)) (Get (fun unit -> unit))))) (fun zero -> zero)
